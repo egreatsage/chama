@@ -8,8 +8,8 @@ export async function POST(request) {
   try {
     await connectDB();
 
-    // ✅ Read user from cookie
-    const userCookie = cookies().get("user");
+    const cookieStore = await cookies();
+    const userCookie = cookieStore.get("user");
     if (!userCookie) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
     }
@@ -67,6 +67,9 @@ export async function POST(request) {
       amount,
       status: "pending",
       checkoutRequestId: response.data.CheckoutRequestID,
+      mpesaReceiptNumber: response.data.mpesaReceiptNumber,
+      transactionDate: response.data.transactionDate,
+      failureReason: null,
       phoneNumber: formattedPhone,
       paymentMethod: "mpesa",
     });

@@ -5,7 +5,10 @@ import { cookies } from "next/headers";
 export async function GET() {
   await connectDB();
 
-  const userCookie = await cookies().get("user");
+  // Correct
+    const cookieStore = await cookies();
+    const userCookie = cookieStore.get("user");
+    
   if (!userCookie) {
     return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
   }

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
 export function middleware(request) {
+  console.log('JWT_SECRET in middleware:', process.env.JWT_SECRET)
   const token = request.cookies.get('auth-token')?.value;
   const { pathname } = request.nextUrl;
 

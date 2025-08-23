@@ -17,7 +17,6 @@ export default function ContributionsPage() {
       const data = await res.json();
       if (res.ok) {
         setContributions(data.contributions);
-        toast.success("Contributions loaded successfully");
       } else {
         toast.error("Failed to load contributions");
       }
