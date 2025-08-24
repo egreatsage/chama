@@ -79,7 +79,7 @@ export async function POST(request) {
       status: "pending",
       checkoutRequestId: response.data.CheckoutRequestID,
       mpesaReceiptNumber: response.data.mpesaReceiptNumber,
-      transactionDate: response.data.transactionDate,
+      transactionDate: response.data.TransactionDate,
       failureReason: response.data.resultDec,
       ResultCode: response.data.ResultCode,
       phoneNumber: formattedPhone,

@@ -1,4 +1,5 @@
 // app/admin/page.jsx
+import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 function AdminContent() {
@@ -19,18 +20,30 @@ function AdminContent() {
                   Admin Tools
                 </h3>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-gray-900">User Management</h4>
-                    <p className="text-sm text-gray-600 mt-1">Manage all users in the system</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-gray-900">System Settings</h4>
-                    <p className="text-sm text-gray-600 mt-1">Configure application settings</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-gray-900">Reports</h4>
-                    <p className="text-sm text-gray-600 mt-1">View system reports and analytics</p>
-                  </div>
+                  <Link href="/admin/users">
+                    <div className="bg-gray-50 p-4 rounded-lg border-l-green-600  border-l-3 cursor-pointer hover:shadow-lg transition-shadow">
+                      <h4 className="font-medium text-gray-900">User Management</h4>
+                      <p className="text-sm text-gray-600 mt-1">Manage all users in the system</p>
+                    </div>
+                  </Link>
+                  <Link href="/admin/contributions">
+                    <div className="bg-gray-50 p-4 rounded-lg border-l-red-600  border-l-3 cursor-pointer hover:shadow-lg transition-shadow">
+                      <h4 className="font-medium text-gray-900">Contributions</h4>
+                      <p className="text-sm text-gray-600 mt-1">Manage all member Contributions</p>
+                    </div>
+                  </Link>
+                  <Link href="/admin/withdrawals">
+                    <div className="bg-gray-50 p-4 rounded-lg border-l-purple-600  border-l-3 cursor-pointer hover:shadow-lg transition-shadow">
+                      <h4 className="font-medium text-gray-900">Withdrawals</h4>
+                      <p className="text-sm text-gray-600 mt-1">Manage all member Withdrawals</p>
+                    </div>
+                  </Link>
+                  <Link href="/admin/reports">
+                    <div className="bg-gray-50 p-4 rounded-lg border-l-blue-600  border-l-3 cursor-pointer hover:shadow-lg transition-shadow">
+                      <h4 className="font-medium text-gray-900">Reports</h4>
+                      <p className="text-sm text-gray-600 mt-1">View system reports and analytics</p>
+                    </div>
+                  </Link>
                 </div>
               </div>
             </div>

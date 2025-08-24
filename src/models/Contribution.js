@@ -41,6 +41,15 @@ const ContributionSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    ResultCode: {
+      type: Number,
+      default: null,
+    },
+    ResultDesc: {
+      type: String,
+      default: null,
+    },
+    
   },
   { timestamps: true }
 );
