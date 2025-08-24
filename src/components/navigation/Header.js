@@ -132,6 +132,34 @@ export default function Header() {
                     )}
                     <div className="border-t border-gray-100 my-1"></div>
                     <Menu.Item>
+                       {({ active }) => (
+                           <Link
+                             href="/withdrawals"
+                                className={classNames(
+        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+        'block px-4 py-2 text-sm'
+      )}
+    >
+      Withdrawals
+    </Link>
+  )}
+                   </Menu.Item>
+                  <div className="border-t border-gray-100 my-1"></div>
+                  <Menu.Item>
+                       {({ active }) => (
+                           <Link
+                             href="/contributions"
+                                className={classNames(
+        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+        'block px-4 py-2 text-sm'
+      )}
+    >
+      Contributions
+    </Link>
+  )}
+                   </Menu.Item>
+                  <div className="border-t border-gray-100 my-1"></div>
+                    <Menu.Item>
                       {({ active }) => (
                         <button
                           onClick={handleLogout}

@@ -1,6 +1,7 @@
 // app/dashboard/page.jsx
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { getServerSideUser } from '@/lib/auth';
+import Link from 'next/link';
 
 async function DashboardContent() {
   const user = await getServerSideUser();
@@ -44,6 +45,13 @@ async function DashboardContent() {
                     </dd>
                   </div>
                 </div>
+                {user?.role === 'admin' && (
+                  <div className="mt-6">
+                    <Link href="/admin/withdrawals" className="text-blue-500 hover:underline">
+                       Withdrawals
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>

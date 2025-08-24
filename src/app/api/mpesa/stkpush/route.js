@@ -69,7 +69,8 @@ export async function POST(request) {
       checkoutRequestId: response.data.CheckoutRequestID,
       mpesaReceiptNumber: response.data.mpesaReceiptNumber,
       transactionDate: response.data.transactionDate,
-      failureReason: null,
+      failureReason: response.data.resultDec,
+      ResultCode: response.data.ResultCode,
       phoneNumber: formattedPhone,
       paymentMethod: "mpesa",
     });

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
+import { CheckCircle } from 'lucide-react';
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
@@ -32,7 +33,16 @@ export default function LoginForm() {
     const result = await login(formData);
     
     if (result.success) {
-      toast.success('Login successful!');
+       toast.success("success", {
+      icon: <CheckCircle className="text-white" size={20} />, // ✅ icon
+      style: {
+        background: "#22c55e", // Tailwind green-500
+        color: "#fff",
+        padding: "12px 16px",
+        borderRadius: "12px",
+        fontWeight: "500",
+      },
+    });
       router.push('/dashboard');
     }
   };
@@ -59,8 +69,8 @@ export default function LoginForm() {
             </div>
           )}
           
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
+          <div className="rounded-md  -space-y-px ">
+            <div className='mb-4'>
               <label htmlFor="email" className="sr-only">
                 Email address
               </label>
@@ -70,7 +80,7 @@ export default function LoginForm() {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900  focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
                 value={formData.email}
                 onChange={handleChange}
@@ -86,7 +96,7 @@ export default function LoginForm() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900  focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
@@ -98,7 +108,7 @@ export default function LoginForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#393B66] hover:shadow-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

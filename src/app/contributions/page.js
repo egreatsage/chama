@@ -17,9 +17,7 @@ export default function ContributionsPage() {
       const data = await res.json();
       if (res.ok) {
         setContributions(data.contributions);
-      } else {
-        toast.error("Failed to load contributions");
-      }
+      } 
     } catch (error) {
       toast.error("Network error while loading contributions");
     } finally {
@@ -197,12 +195,7 @@ export default function ContributionsPage() {
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
                 <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Stats</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl" style={{ backgroundColor: '#F1E3F0' }}>
-                    <span className="text-gray-700 font-medium">Total Contributions</span>
-                    <span className="text-2xl font-bold" style={{ color: '#393B65' }}>
-                      {contributions.length}
-                    </span>
-                  </div>
+                 
                   <div className="flex items-center justify-between p-4 rounded-xl" style={{ backgroundColor: '#F1E3F0' }}>
                     <span className="text-gray-700 font-medium">Total Amount</span>
                     <span className="text-2xl font-bold" style={{ color: '#393B65' }}>

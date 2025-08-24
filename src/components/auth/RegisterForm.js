@@ -5,6 +5,7 @@ import useAuthStore from '@/store/authStore';
 import Link from 'next/link';
 import ImageUpload from '@/components/ui/ImageUpload';
 import toast from 'react-hot-toast';
+import { CheckCircle } from 'lucide-react';
 
 export default function RegisterForm() {
   const [formData, setFormData] = useState({
@@ -74,8 +75,17 @@ export default function RegisterForm() {
     const result = await register(registerData);
     
     if (result.success) {
-      toast.success('Registration successful! Redirecting...');
-      router.push('/dashboard');
+      toast.success("success", {
+      icon: <CheckCircle className="text-white" size={20} />, // ✅ icon
+      style: {
+        background: "#22c55e", // Tailwind green-500
+        color: "#fff",
+        padding: "12px 16px",
+        borderRadius: "12px",
+        fontWeight: "500",
+      },
+    });
+      router.push('/profile');
     }
   };
 
@@ -115,7 +125,7 @@ export default function RegisterForm() {
           </div>
           
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
                   First Name
@@ -148,7 +158,9 @@ export default function RegisterForm() {
               </div>
             </div>
             
-            <div>
+            
+            <div className='grid md:grid-cols-2 gap-4'>
+              <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email Address
               </label>
@@ -164,8 +176,7 @@ export default function RegisterForm() {
                 onChange={handleChange}
               />
             </div>
-            
-            <div>
+              <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
                 Phone Number
               </label>
@@ -183,8 +194,10 @@ export default function RegisterForm() {
                 <p className="mt-1 text-sm text-red-600">{validationErrors.phoneNumber}</p>
               )}
             </div>
-            
-            <div>
+            </div>
+           
+             <div className='grid md:grid-cols-2 gap-4'>
+               <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
@@ -222,13 +235,15 @@ export default function RegisterForm() {
                 <p className="mt-1 text-sm text-red-600">{validationErrors.confirmPassword}</p>
               )}
             </div>
+             </div>
+            
           </div>
 
           <div>
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#393B66] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
