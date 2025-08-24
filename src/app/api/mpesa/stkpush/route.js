@@ -3,25 +3,36 @@ import { getAccessToken, getTimestamp } from "@/lib/mpesa";
 import axios from "axios";
 import { connectDB } from "@/lib/dbConnect";
 import Contribution from "@/models/Contribution";
+import jwt from 'jsonwebtoken';
 
 export async function POST(request) {
   try {
     await connectDB();
 
+    // Get token from auth-token cookie and verify it
     const cookieStore = await cookies();
-    const userCookie = cookieStore.get("user");
-    if (!userCookie) {
+    const token = cookieStore.get("auth-token")?.value;
+    
+    if (!token) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
     }
-    const user = JSON.parse(userCookie.value);
-    const userId = user.id;
+
+    // Verify JWT token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401 });
+    }
+
+    const userId = decoded.userId;
 
     const { phoneNumber, amount } = await request.json();
     if (!phoneNumber || !amount) {
       return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
     }
 
-    // format phone
+    // Format phone number
     let formattedPhone = phoneNumber;
     if (phoneNumber.startsWith("0")) {
       formattedPhone = `254${phoneNumber.slice(1)}`;
@@ -33,7 +44,7 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: "Invalid Safaricom number" }), { status: 400 });
     }
 
-    const token = await getAccessToken();
+    const accessToken = await getAccessToken();
     const timestamp = getTimestamp();
     const shortCode = process.env.MPESA_BUSINESS_SHORT_CODE;
     const passkey = process.env.MPESA_PASSKEY;
@@ -58,7 +69,7 @@ export async function POST(request) {
     const response = await axios.post(
       "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
       payload,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
     // Save pending contribution

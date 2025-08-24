@@ -1,4 +1,4 @@
-// app/api/auth/logout/route.js
+// app/api/auth/logout/route.js - FIXED
 import { NextResponse } from 'next/server';
 
 export async function POST() {
@@ -8,12 +8,21 @@ export async function POST() {
       { status: 200 }
     );
 
-    // Clear the auth cookie
+    // Clear BOTH cookies
     response.cookies.set('auth-token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 0,
+      path: '/',
+    });
+
+    response.cookies.set('user', '', {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
     });
 
     return response;

@@ -1,12 +1,9 @@
-import { redirect } from 'next/navigation';
-import { getServerSideUser } from '@/lib/auth';
+import React from 'react'
 
-export default async function HomePage() {
-  const user = await getServerSideUser();
-  
-  if (user) {
-    redirect('/dashboard');
-  } else {
-    redirect('/login');
-  }
+const HomePage = () => {
+  return (
+    <div>HomePage</div>
+  )
 }
+
+export default HomePage

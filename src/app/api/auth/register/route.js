@@ -1,4 +1,3 @@
-// app/api/auth/register/route.js
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -51,27 +50,40 @@ export async function POST(request) {
       { expiresIn: '7d' }
     );
 
+    // Prepare user data
+    const userData = {
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      photoUrl: user.photoUrl,
+    };
+
     // Create response
     const response = NextResponse.json({
       message: 'User registered successfully',
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        fullName: user.fullName,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        role: user.role,
-        photoUrl: user.photoUrl,
-      }
+      user: userData
     }, { status: 201 });
 
-    // Set HTTP-only cookie
+    // Set HTTP-only cookie with JWT token
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    // ALSO set user data cookie for client-side access
+    response.cookies.set('user', JSON.stringify(userData), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
     });
 
     return response;

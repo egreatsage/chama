@@ -1,61 +1,99 @@
-// middleware.js (in root directory)
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 
-export function middleware(request) {
-  console.log('JWT_SECRET in middleware:', process.env.JWT_SECRET)
-  const token = request.cookies.get('auth-token')?.value;
+const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+
+// Define public routes (these don't require authentication)
+const publicPaths = [
+  '/',
+  '/login',
+  '/register',
+  '/about',
+  '/contact',
+  '/terms',
+  '/privacy',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email'
+];
+
+// Define auth routes (redirect to dashboard if already logged in)
+const authPaths = ['/login', '/register'];
+
+// Define protected routes (require authentication)
+const protectedPaths = [
+  '/dashboard',
+  '/profile',
+  '/contributions',
+  '/admin',
+  '/settings',
+  '/payments',
+  '/reports'
+];
+
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
-
-  // Define protected routes
-  const protectedRoutes = ['/dashboard', '/profile', '/admin'];
-  const authRoutes = ['/login', '/register'];
+  const token = request.cookies.get('auth-token')?.value;
   
-  // Check if the current path is protected
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-  const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
-
-  // If accessing protected route without token
-  if (isProtectedRoute && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // If token exists, verify it
+  // Check if user is authenticated
+  let isAuthenticated = false;
   if (token) {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      // If user is authenticated and trying to access auth pages, redirect to dashboard
-      if (isAuthRoute) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-
-      // Check role-based access for admin routes
-      if (pathname.startsWith('/admin') && decoded.role !== 'admin') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-
+      await jwtVerify(token, secret);
+      isAuthenticated = true;
     } catch (error) {
-      // Invalid token - redirect to login if accessing protected route
-      if (isProtectedRoute) {
-        const response = NextResponse.redirect(new URL('/login', request.url));
-        // Clear invalid token
-        response.cookies.delete('auth-token');
-        return response;
-      }
+      console.error('Token verification failed:', error);
+      // Clear invalid tokens
+      const response = NextResponse.next();
+      response.cookies.delete('auth-token');
+      response.cookies.delete('user');
     }
   }
 
+  // Handle auth routes (login/register) - redirect if already logged in
+  const isAuthPath = authPaths.some(path => pathname.startsWith(path));
+  if (isAuthPath && isAuthenticated) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  // Handle public routes - allow access
+  const isPublicPath = publicPaths.some(path => {
+    if (path === '/') return pathname === '/';
+    return pathname.startsWith(path);
+  });
+  if (isPublicPath) {
+    return NextResponse.next();
+  }
+
+  // Handle protected routes - require authentication
+  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
+  if (isProtectedPath) {
+    if (!isAuthenticated) {
+      // Store the attempted URL to redirect back after login
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.next();
+  }
+
+  // For any other routes not explicitly defined, treat as protected
+  if (!isAuthenticated) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+  
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/profile/:path*',
-    '/admin/:path*',
-    '/login',
-    '/register'
-  ]
+    // Match all request paths except for the ones starting with:
+    // - api (API routes)
+    // - _next/static (static files)
+    // - _next/image (image optimization files)
+    // - favicon.ico (favicon file)
+    '/((?!api|_next/static|_next/image|favicon.ico|login|register).*)',
+  ],
 };
-

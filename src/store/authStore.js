@@ -1,4 +1,3 @@
-// store/authStore.js
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -117,21 +116,26 @@ const useAuthStore = create(
         set({ isLoading: true });
         
         try {
-          const response = await fetch('/api/auth/me');
+          const response = await fetch('/api/auth/me', {
+            credentials: 'include', // Ensure cookies are included
+          });
           
           if (response.ok) {
             const data = await response.json();
             set({ 
               user: data.user, 
               isAuthenticated: true, 
-              isLoading: false 
+              isLoading: false,
+              error: null
             });
+            return { success: true, user: data.user };
           } else {
             set({ 
               user: null, 
               isAuthenticated: false, 
               isLoading: false 
             });
+            return { success: false };
           }
         } catch (error) {
           console.error('Auth check failed:', error);
@@ -139,8 +143,9 @@ const useAuthStore = create(
             user: null, 
             isAuthenticated: false, 
             isLoading: false,
-            error: 'Authentication check failed'
+            error: null // Don't show error for auth check failures
           });
+          return { success: false };
         }
       },
 
@@ -148,9 +153,11 @@ const useAuthStore = create(
       updateUser: (userData) => {
         const currentUser = get().user;
         if (currentUser) {
-          set({ 
-            user: { ...currentUser, ...userData } 
-          });
+          const updatedUser = { ...currentUser, ...userData };
+          set({ user: updatedUser });
+          
+          // Update the user cookie as well
+          document.cookie = `user=${JSON.stringify(updatedUser)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
         }
       },
     }),
