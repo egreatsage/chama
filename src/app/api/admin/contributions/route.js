@@ -27,7 +27,6 @@ export async function GET() {
           model: User 
       })
       .sort({ createdAt: -1 });
-    console.log("Fetched contributions:", contributions);
     return NextResponse.json({ contributions });
 
   } catch (error) {

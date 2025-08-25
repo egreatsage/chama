@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { UserIcon } from 'lucide-react';
+import formatMpesaDate from '@/components/MpesaDates';
 
 function ManageContributions() {
   const [contributions, setContributions] = useState([]);
@@ -35,10 +36,10 @@ function ManageContributions() {
 
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete these details?")) {
-        const toastId = toast.loading('Deleting details...');
+    if (window.confirm("Are you sure you want to delete this record?")) {
+        const toastId = toast.loading('Deleting records...');
         try {
-            const res = await fetch(`/api/contributions/${id}`, {
+            const res = await fetch(`/api/admin/contributions/${id}`, {
                 method: 'DELETE',
             });
 
@@ -47,7 +48,7 @@ function ManageContributions() {
                 throw new Error(data.error || 'Failed to delete');
             }
 
-            toast.success('Request deleted!', { id: toastId });
+            toast.success('Record deleted!', { id: toastId });
             fetchAllContributions(); // Refresh list
         } catch (error) {
             toast.error(error.message, { id: toastId });
@@ -68,13 +69,13 @@ function ManageContributions() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photo</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Person</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">MpesaReceiptNumber</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ContributionDate</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">phoneNumber</th>              
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">phoneNumber</th>  
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>            
 
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
@@ -101,17 +102,29 @@ function ManageContributions() {
                     className={`h-5 w-5 mr-2 ${c?.photoUrl ? 'hidden' : 'block'}`} 
                   />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.firstName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.userId ? `${c.userId.firstName} ${c.userId.lastName}` : 'No name'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.paymentMethod}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.amount}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.status}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.MpesaReceiptNumber}</td>
+                 <td className="px-6 py-4 whitespace-nowrap text-sm">
+  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+    c.status === 'confirmed' 
+      ? 'bg-green-100 text-green-800'
+      : c.status === 'pending'
+      ? 'bg-yellow-100 text-yellow-800'
+      : c.status === 'failed'
+      ? 'bg-red-100 text-red-800'
+      : 'bg-gray-100 text-gray-800'
+  }`}>
+    {c.status}
+  </span>
+</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.mpesaReceiptNumber}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.transactionDate ? formatMpesaDate(c.transactionDate) : "-"}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.phoneNumber}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.failureReason}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.transactionDate}</td>
+                  
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                           <button onClick={() => handleDelete(c._id)} className="text-red-600 hover:text-red-900">Delete</button> 
+                           <button onClick={() => handleDelete(c._id)} className="text-red-600 hover:text-red-900 cursor-pointer">Delete</button> 
                   </td>
                 </tr>
               ))}

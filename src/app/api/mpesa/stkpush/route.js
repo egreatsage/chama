@@ -82,7 +82,7 @@ export async function POST(request) {
       transactionDate: response.data.TransactionDate,
       failureReason: response.data.resultDec,
       ResultCode: response.data.ResultCode,
-      phoneNumber: formattedPhone,
+      phoneNumber: phoneNumber,
       paymentMethod: "mpesa",
     });
 
