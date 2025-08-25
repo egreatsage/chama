@@ -1,56 +1,77 @@
-// app/dashboard/page.jsx
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { getServerSideUser } from '@/lib/auth';
-import Link from 'next/link';
+// src/app/dashboard/page.js
 
-async function DashboardContent() {
-  const user = await getServerSideUser();
-  
+'use client';
+
+import { useState, useEffect } from 'react';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import useAuthStore from '@/store/authStore';
+
+function StatCard({ title, value, icon }) {
   return (
-    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div className="px-4 py-6 sm:px-0">
-        <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Welcome to Dashboard
-            </h1>
-            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                  User Information
-                </h3>
-                <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Full name</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user?.fullName}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Email</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user?.email}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Phone</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user?.phoneNumber}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Role</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        user?.role === 'admin' ? 'bg-red-100 text-red-800' :
-                        user?.role === 'treasurer' ? 'bg-blue-100 text-blue-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {user?.role}
-                      </span>
-                    </dd>
-                  </div>
-                </div>
-                
-              </div>
-            </div>
+    <div className="bg-white overflow-hidden shadow rounded-lg">
+      <div className="p-5">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            {icon}
+          </div>
+          <div className="ml-5 w-0 flex-1">
+            <dl>
+              <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
+              <dd className="text-3xl font-semibold text-gray-900">KES {value.toLocaleString()}</dd>
+            </dl>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+function DashboardContent() {
+  const { user } = useAuthStore();
+  const [stats, setStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/dashboard-stats');
+        const data = await res.json();
+        if (res.ok) {
+          setStats(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch stats", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (isLoading) {
+    return <div className="text-center">Loading dashboard...</div>;
+  }
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900">Welcome, {user?.firstName}!</h1>
+      <p className="text-gray-600">Here is a summary of your account.</p>
+
+      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard title="Total Contributions" value={stats?.totalContributions || 0} />
+        <StatCard title="Total Withdrawals" value={stats?.totalWithdrawals || 0} />
+        <StatCard title="Your Net Balance" value={stats?.netBalance || 0} />
+      </div>
+
+       <div className="mt-8">
+            <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
+            {/* You can add a list of recent transactions here in the future */}
+            <div className="mt-4 bg-white shadow rounded-lg p-5">
+                 <p className="text-gray-500">Your recent transactions will appear here.</p>
+            </div>
+       </div>
+
     </div>
   );
 }
