@@ -21,6 +21,7 @@ export default function RootLayout({ children }) {
       <body className={roboto.className}>
         <Toaster position='center-top' />  
         <AuthProvider>
+          
           <Header />
           <main className="min-h-screen bg-gray-50">
             {children}
