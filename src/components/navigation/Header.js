@@ -84,7 +84,20 @@ export default function Header() {
                           </div>
                         )}
                       </Menu.Item>
-                      
+                      <Menu.Item>
+                        {({ active }) => (
+                          <div>
+                            
+                        <Link
+                          href="/dashboard"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                           My Dashboard
+                        </Link>
+                    
+                          </div>
+                        )}
+                      </Menu.Item>   
                     <div className="py-1">
                        {/* ... your existing menu items ... */}
                        <Menu.Item>

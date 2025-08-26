@@ -19,7 +19,8 @@ const navigation = [
   { name: 'Memebers', href: '/admin/users', icon: HomeIcon },
   { name: 'Contributions', href: '/admin/contributions', icon: HomeIcon },
   { name: 'Withdrawals', href: '/admin/withdrawals', icon: CurrencyDollarIcon },
-  { name: 'Chamas', href: '/admin/chamas/applications', icon: UsersIcon },
+  { name: 'Chamas', href: '/admin/chamas', icon: UsersIcon },
+
   
 ];
 
