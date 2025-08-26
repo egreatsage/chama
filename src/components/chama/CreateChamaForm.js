@@ -63,7 +63,7 @@ export default function CreateChamaForm() {
                     id="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md shadow-sm"
                     required
                 />
             </div>
@@ -75,7 +75,7 @@ export default function CreateChamaForm() {
                     rows="3"
                     value={formData.description}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md shadow-sm"
                 ></textarea>
             </div>
             <div>
@@ -86,7 +86,7 @@ export default function CreateChamaForm() {
                     id="contributionAmount"
                     value={formData.contributionAmount}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md shadow-sm"
                     required
                     min="1"
                 />
@@ -98,7 +98,7 @@ export default function CreateChamaForm() {
                     id="contributionFrequency"
                     value={formData.contributionFrequency}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md shadow-sm"
                 >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>

@@ -43,6 +43,7 @@ export async function GET(request) {
         photoUrl: user.photoUrl,
       }
     });
+    console.log(user);
   } catch (error) {
     console.error('Auth check error:', error);
     return NextResponse.json(

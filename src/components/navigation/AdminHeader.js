@@ -16,9 +16,11 @@ import {
 
 const navigation = [
   { name: 'Admin Dashboard', href: '/admin', icon: HomeIcon },
-  { name: 'Manage Withdrawals', href: '/admin/withdrawals', icon: CurrencyDollarIcon },
-  // Add more admin links here in the future
-  // { name: 'Manage Members', href: '/admin/members', icon: UsersIcon },
+  { name: 'Memebers', href: '/admin/users', icon: HomeIcon },
+  { name: 'Contributions', href: '/admin/contributions', icon: HomeIcon },
+  { name: 'Withdrawals', href: '/admin/withdrawals', icon: CurrencyDollarIcon },
+  { name: 'Chamas', href: '/admin/chamas/applications', icon: UsersIcon },
+  
 ];
 
 function classNames(...classes) {

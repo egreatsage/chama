@@ -8,6 +8,7 @@ const useAuthStore = create(
       isLoading: false,
       error: null,
       isAuthenticated: false,
+      hasInitialized: false, // To track if auth check has been done
 
       // Clear error
       clearError: () => set({ error: null }),
@@ -113,8 +114,9 @@ const useAuthStore = create(
 
       // Check auth status (for initial load)
       checkAuth: async () => {
-        set({ isLoading: true });
-        
+         const {hasInitialized} = get();
+         if (hasInitialized) return; // Prevent multiple calls
+          set({isLoading:true})
         try {
           const response = await fetch('/api/auth/me', {
             credentials: 'include', // Ensure cookies are included
@@ -126,14 +128,16 @@ const useAuthStore = create(
               user: data.user, 
               isAuthenticated: true, 
               isLoading: false,
-              error: null
+              error: null,
+              hasInitialized: true
             });
             return { success: true, user: data.user };
           } else {
             set({ 
               user: null, 
               isAuthenticated: false, 
-              isLoading: false 
+              isLoading: false,
+              hasInitialized: true,
             });
             return { success: false };
           }
@@ -143,7 +147,8 @@ const useAuthStore = create(
             user: null, 
             isAuthenticated: false, 
             isLoading: false,
-            error: null // Don't show error for auth check failures
+            error: null,
+            hasInitialized: true, 
           });
           return { success: false };
         }
