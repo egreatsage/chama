@@ -5,9 +5,14 @@ const UserSchema = new Schema({
   lastName:  { type: String, required: true },
   email:     { type: String, unique: true, required: true },
   phoneNumber: { type: String, unique: true, required: true },
-  password:  { type: String, required: true }, // Hashed with bcrypt
-  photoUrl:  { type: String }, // Cloudinary link
-  emailVerified: { type: Boolean, default: false }, // From new documentation
+  password:  { type: String, required: true }, 
+  photoUrl:  { type: String }, 
+  emailVerified: { type: Boolean, default: false }, 
+  role: { 
+    type: String, 
+    enum: ['user', 'admin'], 
+    default: 'user' 
+  },
 }, { timestamps: true });
 
 // Virtual field for fullName
