@@ -92,7 +92,7 @@ function DashboardContent() {
                   <p className="text-sm text-gray-500 mt-1 truncate">{chama.description || 'No description'}</p>
                 </div>
                 <div className="mt-4">
-                  <Link href={`/chama/${chama._id}`}>
+                  <Link href={`/chamas/${chama._id}`}>
                     <button className="w-full text-sm font-semibold text-indigo-600 hover:text-indigo-800">
                       View Details &rarr;
                     </button>

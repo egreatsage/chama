@@ -14,7 +14,7 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        const { id } = params; // This is the Chama ID
+        const { id } = await params; // This is the Chama ID
 
         // Security Check: Verify that the current user is a member of this Chama
         const currentUserMembership = await ChamaMember.findOne({ userId: user.id, chamaId: id });
@@ -47,7 +47,7 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
         
-        const { id } = params; // Chama ID
+        const { id } = await params; // Chama ID
         const { email } = await request.json();
 
         // Security Check: Verify user is a admin
