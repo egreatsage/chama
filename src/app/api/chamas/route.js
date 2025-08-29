@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from "@/lib/dbConnect";
 import Chama from "@/models/Chama";
-import ChamaMember from "@/models/ChamaMember"; // 1. Import the ChamaMember model
+import ChamaMember from "@/models/ChamaMember";
+import ChamaRules from "@/models/ChamaRules"; // Import the new rules model
 import { getServerSideUser } from '@/lib/auth';
 
-// POST: Handles the creation of a new Chama
 export async function POST(request) {
   await connectDB();
   try {
@@ -13,27 +13,39 @@ export async function POST(request) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { name, description, contributionAmount, contributionFrequency } = await request.json();
-    if (!name) {
-      return NextResponse.json({ error: "Chama name is required" }, { status: 400 });
+    const body = await request.json();
+    const { name, description, operationType, contributionAmount, contributionFrequency, typeSpecificConfig } = body;
+    
+    if (!name || !operationType) {
+      return NextResponse.json({ error: "Chama Name and Operation Type are required." }, { status: 400 });
     }
 
-    // 2. Create the Chama document
-    const newChama = await Chama.create({
+    // Prepare the data for the new Chama
+    const chamaData = {
       name,
       description,
       createdBy: user.id,
-      contributionAmount: contributionAmount ? Number(contributionAmount) : 0,
+      operationType,
+      contributionAmount: Number(contributionAmount) || 0,
       contributionFrequency: contributionFrequency || 'monthly',
-      status: 'pending', // A system admin will approve this
-    });
+      status: 'pending',
+      // Add the type-specific config based on the operationType
+      [operationType]: typeSpecificConfig 
+    };
 
-    // 3. CRITICAL: Create the ChamaMember record for the creator
+    const newChama = await Chama.create(chamaData);
+
+    // Automatically make the creator the chairperson
     await ChamaMember.create({
         chamaId: newChama._id,
         userId: user.id,
         role: 'chairperson',
         status: 'active'
+    });
+
+    // Automatically create a default rules document for the new Chama
+    await ChamaRules.create({
+        chamaId: newChama._id,
     });
 
     return NextResponse.json({
