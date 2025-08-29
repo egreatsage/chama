@@ -1,11 +1,10 @@
-// src/app/api/chamas/route.js
-
 import { NextResponse } from 'next/server';
 import { connectDB } from "@/lib/dbConnect";
 import Chama from "@/models/Chama";
-import ChamaMember from "@/models/ChamaMember";
+import ChamaMember from "@/models/ChamaMember"; // 1. Import the ChamaMember model
 import { getServerSideUser } from '@/lib/auth';
 
+// POST: Handles the creation of a new Chama
 export async function POST(request) {
   await connectDB();
   try {
@@ -15,21 +14,21 @@ export async function POST(request) {
     }
 
     const { name, description, contributionAmount, contributionFrequency } = await request.json();
-    if (!name || !contributionAmount || !contributionFrequency) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!name) {
+      return NextResponse.json({ error: "Chama name is required" }, { status: 400 });
     }
 
-    // Create the new Chama with a 'pending' status for admin approval
+    // 2. Create the Chama document
     const newChama = await Chama.create({
       name,
       description,
       createdBy: user.id,
-      contributionAmount: Number(contributionAmount),
-      contributionFrequency,
-      status: 'pending', // A system admin will need to approve this
+      contributionAmount: contributionAmount ? Number(contributionAmount) : 0,
+      contributionFrequency: contributionFrequency || 'monthly',
+      status: 'pending', // A system admin will approve this
     });
 
-    // Automatically make the creator the chairperson of the new Chama
+    // 3. CRITICAL: Create the ChamaMember record for the creator
     await ChamaMember.create({
         chamaId: newChama._id,
         userId: user.id,
@@ -43,7 +42,7 @@ export async function POST(request) {
     }, { status: 201 });
 
   } catch (error) {
-    if (error.code === 11000) { // Handle duplicate Chama name error
+    if (error.code === 11000) {
         return NextResponse.json({ error: "A Chama with this name already exists." }, { status: 409 });
     }
     console.error("Failed to create Chama:", error);

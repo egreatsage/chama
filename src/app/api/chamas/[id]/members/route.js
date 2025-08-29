@@ -48,7 +48,7 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
         
-        const { id } = params; // Chama ID
+        const { id } = await params; // Chama ID
         const { email } = await request.json();
 
         if (!email) {

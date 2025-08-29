@@ -14,30 +14,28 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        const { id } = await params; // This is the Chama ID
+        const { id } = await params;
 
-        // Security Check: Verify that the current user is a member of this Chama
-        const currentUserMembership = await ChamaMember.findOne({ userId: user.id, chamaId: id });
-        if (!currentUserMembership) {
-            return NextResponse.json({ error: "Access Forbidden" }, { status: 403 });
+        // Security Check: This will now pass for the creator
+        const membership = await ChamaMember.findOne({ userId: user.id, chamaId: id });
+        if (!membership) {
+            return NextResponse.json({ error: "Access Forbidden: You are not a member of this Chama." }, { status: 403 });
         }
 
-        const members = await ChamaMember.find({ chamaId: id })
-            .populate({
-                path: 'userId',
-                select: 'firstName lastName email photoUrl',
-                model: User
-            });
-        
-        return NextResponse.json({ members });
-       
+        const chama = await Chama.findById(id);
+        if (!chama) {
+            return NextResponse.json({ error: "Chama not found" }, { status: 404 });
+        }
+
+        const chamaData = { ...chama.toObject(), userRole: membership.role };
+
+        return NextResponse.json({ chama: chamaData });
 
     } catch (error) {
-        console.error("Failed to fetch members:", error);
+        console.error("Failed to fetch Chama details:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
-
 
 // POST: Invite a new member to the Chama
 export async function POST(request, { params }) {
