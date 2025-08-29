@@ -21,7 +21,6 @@ export async function GET() {
                 model: User
             })
             .sort({ createdAt: -1 });
-           console.log(chamas);
         return NextResponse.json({ chamas });
 
     } catch (error) {

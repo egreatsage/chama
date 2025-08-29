@@ -25,6 +25,7 @@ export default function ChamaDetailPage() {
         try {
           // Fetch chama details
           const chamaRes = await fetch(`/api/chamas/${id}`);
+          console.log(chamaRes);
           if (!chamaRes.ok) {
             const data = await chamaRes.json();
             throw new Error(data.error || 'Failed to load Chama details');

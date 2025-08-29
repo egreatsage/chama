@@ -13,7 +13,7 @@ export async function GET() {
   const userData = JSON.parse(userCookie.value);
 
   const user = await User.findById(userData.id).select("-password");
-  console.log(firstname, lastName, email, phoneNumber, role);
+
   if (!user) {
     return new Response(JSON.stringify({ error: "User not found" }), { status: 404 });
   }

@@ -9,7 +9,7 @@ export async function POST(request) {
 
   try {
     const callbackData = await request.json();
-    console.log("STK Callback:", JSON.stringify(callbackData, null, 2));
+    
 
     const { Body } = callbackData;
     if (!Body?.stkCallback) {

@@ -34,9 +34,7 @@ export async function GET() {
     const totalWithdrawals = withdrawalStats.length > 0 ? withdrawalStats[0].total : 0;
     const netBalance = totalContributions - totalWithdrawals;
 
-    // Optional: for debugging in your terminal
-    console.log("User Dashboard Stats:", { totalContributions, totalWithdrawals, netBalance });
-
+   
     return NextResponse.json({
       totalContributions,
       totalWithdrawals,
