@@ -205,3 +205,202 @@ Our Chama Team
     };
   }
 }
+export async function sendChamaApprovalEmail({ to, chamaName }) {
+  const subject = `🎉 Congratulations! Your Chama "${chamaName}" has been approved`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Chama Approved</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #393B65 0%, #2D2F4F 100%); padding: 40px 20px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
+            🎉 Chama Approved!
+          </h1>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 40px 30px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <div style="display: inline-block; background-color: #e8f5e8; color: #2d5016; padding: 12px 24px; border-radius: 25px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+              ✅ Application Approved
+            </div>
+          </div>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            Dear Valued Member,
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+            We are <strong style="color: #393B65;">delighted</strong> to inform you that your application for the Chama 
+            <strong style="color: #393B65; background-color: #f0f1ff; padding: 2px 8px; border-radius: 4px;">"${chamaName}"</strong> 
+            has been successfully approved! 🎊
+          </p>
+          
+          <!-- Feature Highlights -->
+          <div style="background-color: #f8f9ff; border-left: 4px solid #393B65; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+            <h3 style="color: #393B65; margin: 0 0 15px 0; font-size: 18px;">What's next?</h3>
+            <ul style="color: #555; margin: 0; padding-left: 20px; line-height: 1.6;">
+              <li style="margin-bottom: 8px;">🔐 <strong>Log in to your dashboard</strong> to start managing your Chama</li>
+              <li style="margin-bottom: 8px;">👥 <strong>Invite members</strong> to join your growing community</li>
+              <li style="margin-bottom: 8px;">💰 <strong>Set up contributions</strong> and financial goals</li>
+              <li>📊 <strong>Track progress</strong> with detailed analytics</li>
+            </ul>
+          </div>
+          
+          <!-- CTA Button -->
+          <div style="text-align: center; margin: 35px 0;">
+            <a href="#" style="display: inline-block; background: linear-gradient(135deg, #393B65 0%, #2D2F4F 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(57, 59, 101, 0.3); transition: all 0.3s ease;">
+              Access Your Dashboard →
+            </a>
+          </div>
+          
+          <p style="color: #666; font-size: 14px; line-height: 1.6; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+            Thank you for choosing our platform to manage your Chama. We're excited to be part of your financial journey!
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #eee;">
+          <p style="color: #888; font-size: 12px; margin: 0; line-height: 1.5;">
+            © 2025 Chama App. All rights reserved.<br>
+            Need help? Contact us at support@chamaapp.com
+          </p>
+        </div>
+        
+      </div>
+    </body>
+    </html>
+  `;
+
+  const mailOptions = {
+    from: `"Chama App" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Approval email sent successfully to ${to} for Chama: ${chamaName}`);
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error(`❌ Failed to send approval email to ${to} for Chama: ${chamaName}`, error);
+    throw new Error(`Email delivery failed: ${error.message}`);
+  }
+}
+export async function sendChamaRejectionEmail({ to, chamaName, rejectionReason }) {
+  const subject = `Update on your Chama application for "${chamaName}"`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Chama Application Update</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); padding: 40px 20px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 600; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
+            Chama Application Update
+          </h1>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 40px 30px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <div style="display: inline-block; background-color: #fff3cd; color: #856404; padding: 12px 24px; border-radius: 25px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #ffeaa7;">
+              📋 Application Reviewed
+            </div>
+          </div>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            Dear Valued Applicant,
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+            Thank you for your interest in creating a Chama with us. We have carefully reviewed your application for 
+            <strong style="color: #6c757d; background-color: #f8f9fa; padding: 2px 8px; border-radius: 4px;">"${chamaName}"</strong>.
+          </p>
+          
+          <div style="background-color: #fff5f5; border-left: 4px solid #e74c3c; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+            <p style="color: #333; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">
+              Unfortunately, we are unable to approve your application at this time.
+            </p>
+            ${rejectionReason ? `
+            <div style="background-color: #ffffff; padding: 15px; border-radius: 6px; border: 1px solid #f1c0c7;">
+              <p style="margin: 0; color: #721c24; font-size: 14px; line-height: 1.5;">
+                <strong>Reason:</strong> ${rejectionReason}
+              </p>
+            </div>
+            ` : ''}
+          </div>
+          
+          <!-- Next Steps -->
+          <div style="background-color: #f0f8ff; border-left: 4px solid #007bff; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+            <h3 style="color: #007bff; margin: 0 0 15px 0; font-size: 18px;">What happens next?</h3>
+            <ul style="color: #333; margin: 0; padding-left: 20px; line-height: 1.6;">
+              <li style="margin-bottom: 8px;">📧 <strong>Contact Support:</strong> Reach out if you have questions about this decision</li>
+              <li style="margin-bottom: 8px;">🔄 <strong>Reapply:</strong> You're welcome to submit a new application in the future</li>
+              <li style="margin-bottom: 8px;">📚 <strong>Learn More:</strong> Review our Chama guidelines for better preparation</li>
+              <li>💬 <strong>Get Help:</strong> Our team is here to assist with any concerns</li>
+            </ul>
+          </div>
+          
+          <!-- Support CTA -->
+          <div style="text-align: center; margin: 35px 0;">
+            <a href="mailto:support@chamaapp.com" style="display: inline-block; background-color: #007bff; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: 600; font-size: 14px; box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);">
+              Contact Support Team
+            </a>
+          </div>
+          
+          <p style="color: #666; font-size: 14px; line-height: 1.6; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+            We appreciate your interest in our platform and encourage you to reach out if you have any questions or would like guidance for future applications.
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin-top: 25px;">
+            Best regards,<br>
+            <strong style="color: #393B65;">The Chama App Team</strong>
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #eee;">
+          <p style="color: #888; font-size: 12px; margin: 0; line-height: 1.5;">
+            © 2025 Chama App. All rights reserved.<br>
+            📧 support@chamaapp.com | 📞 +254-XXX-XXXX | 🌐 www.chamaapp.com
+          </p>
+        </div>
+        
+      </div>
+    </body>
+    </html>
+  `;
+
+  const mailOptions = {
+    from: `"Chama App" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 Rejection email sent successfully to ${to} for Chama: ${chamaName}`);
+    return { success: true, message: 'Rejection email sent successfully' };
+  } catch (error) {
+    console.error(`❌ Failed to send rejection email to ${to} for Chama: ${chamaName}`, error);
+    throw new Error(`Email delivery failed: ${error.message}`);
+  }
+}

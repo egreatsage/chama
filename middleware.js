@@ -28,7 +28,8 @@ const protectedPaths = [
   '/admin',
   '/settings',
   '/payments',
-  '/reports'
+  '/reports',
+  '/chamas',
 ];
 
 export async function middleware(request) {
