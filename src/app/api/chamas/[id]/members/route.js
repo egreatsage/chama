@@ -4,6 +4,7 @@ import User from '@/models/User';
 import Chama from "@/models/Chama";
 import ChamaMember from "@/models/ChamaMember";
 import { getServerSideUser } from '@/lib/auth';
+import { sendChamaInvitationEmail } from '@/lib/email';
 
 // GET: Fetch all members of a specific Chama
 export async function GET(request, { params }) {
