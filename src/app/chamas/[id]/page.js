@@ -43,6 +43,7 @@ export default function ChamaDetailPage() {
       }
       const chamaData = await chamaRes.json();
       setChama(chamaData.chama);
+      console.log('Fetched Chama:', chamaData.chama);
 
       if (!membersRes.ok) {
         const data = await membersRes.json();
@@ -111,7 +112,7 @@ export default function ChamaDetailPage() {
       case 'details':
       default:
         if (chama.operationType === 'equal_sharing') {
-          return <EqualSharingTab chama={chama} />;
+          return <EqualSharingTab chama={chama} userRole={chama.userRole} onDataUpdate={fetchData} />;
         }
         return (
           <div className="bg-white shadow rounded-lg p-6">

@@ -23,6 +23,7 @@ export async function POST(request, { params }) {
 
     // Authorization: Only chairperson can trigger distribution
     const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
+    console
     if (!membership || membership.role !== 'chairperson') {
       return NextResponse.json({ error: "Only the chairperson can distribute funds." }, { status: 403 });
     }
