@@ -3,22 +3,21 @@ import { sendInvoiceEmail } from "@/lib/email";
 import Contribution from "@/models/Contribution";
 import Invoice from "@/models/Invoice";
 import User from "@/models/User";
+import Chama from "@/models/Chama"; // Import the Chama model
 
 export async function POST(request) {
   await connectDB();
-
   try {
     const callbackData = await request.json();
-    
-
     const { Body } = callbackData;
+
     if (!Body?.stkCallback) {
       return new Response(JSON.stringify({ error: "Invalid callback format" }), { status: 400 });
     }
 
     const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback;
-
     const contribution = await Contribution.findOne({ checkoutRequestId: CheckoutRequestID });
+
     if (!contribution) {
       return new Response(JSON.stringify({ error: "Contribution not found" }), { status: 404 });
     }
@@ -26,7 +25,6 @@ export async function POST(request) {
     if (ResultCode === 0) {
       // Payment successful
       const metadata = CallbackMetadata?.Item || [];
-      
       const amount = metadata.find((i) => i.Name === "Amount")?.Value;
       const receipt = metadata.find((i) => i.Name === "MpesaReceiptNumber")?.Value;
       const phone = metadata.find((i) => i.Name === "PhoneNumber")?.Value;
@@ -39,23 +37,30 @@ export async function POST(request) {
       contribution.amount = amount;
       await contribution.save();
 
+      // --- NEW LOGIC: Update Chama Balance ---
+      if (contribution.chamaId && contribution.amount > 0) {
+        await Chama.findByIdAndUpdate(contribution.chamaId, {
+          $inc: { currentBalance: contribution.amount }
+        });
+      }
+      // --- END OF NEW LOGIC ---
+
       try {
         const user = await User.findById(contribution.userId);
         if (user) {
           const newInvoice = await Invoice.create({
-            userId:contribution.userId,
-            contributionId:contribution._id,
-            invoiceNumber:`INV-${contribution.mpesaReceiptNumber}`,
-            amount:contribution.amount,
-            status:"paid",
-          })
+            userId: contribution.userId,
+            contributionId: contribution._id,
+            invoiceNumber: `INV-${contribution.mpesaReceiptNumber}`,
+            amount: contribution.amount,
+            status: "paid",
+          });
           await sendInvoiceEmail({ to: user.email, invoice: newInvoice });
         }
       } catch (error) {
         console.error("Error sending invoice email:", error);
       }
     } else {
-      // Payment failed
       contribution.status = "failed";
       contribution.failureReason = ResultDesc;
       await contribution.save();

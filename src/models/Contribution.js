@@ -5,12 +5,18 @@ const ContributionSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   amount: { type: Number, required: true },
   status: { type: String, enum: ["pending", "confirmed", "failed"], default: "pending" },
-  paymentMethod: { type: String, default: "mpesa" },
-  checkoutRequestId: { type: String, required: true, unique: true },
-  mpesaReceiptNumber: { type: String, default: null },
-  transactionDate: { type: String, default: null },
-  phoneNumber: { type: String, required: true },
-  failureReason: { type: String, default: null },
+  paymentMethod: { type: String, enum: ["mpesa", "cash", "bank_transfer"], default: "mpesa" },
+  
+  // M-Pesa specific fields (now optional)
+  checkoutRequestId: { type: String, unique: true, sparse: true }, // sparse allows multiple null values
+  mpesaReceiptNumber: { type: String },
+  transactionDate: { type: String },
+  phoneNumber: { type: String },
+  failureReason: { type: String },
+
+  // Field for admin-added notes
+  notes: { type: String }
+
 }, { timestamps: true });
 
 export default mongoose.models.Contribution || mongoose.model("Contribution", ContributionSchema);
