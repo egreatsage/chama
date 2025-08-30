@@ -14,6 +14,7 @@ import RotationTab from '@/components/chama/RotationTab';
 import EqualSharingTab from '@/components/chama/EqualSharingTab';
 import ContributionsTab from '@/components/chama/ContributionsTab';
 import EditChamaModal from '@/components/chama/EditChamaModal';
+import RulesTab from '@/components/chama/RulesTab';
 
 // Main Page Component
 export default function ChamaDetailPage() {
@@ -116,6 +117,8 @@ export default function ChamaDetailPage() {
             onRotationUpdate={fetchData}
           />
         ) : null;
+        case 'rules':
+          return <RulesTab chama={chama} userRole={chama.userRole} />;
       case 'details':
       default:
         if (chama.operationType === 'equal_sharing') {
@@ -167,6 +170,11 @@ export default function ChamaDetailPage() {
                   Rotation
                 </TabButton>
               )}
+              {chama.userRole === 'chairperson' && (
+                        <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')}>
+                            Rules & Settings
+                        </TabButton>
+                    )}
             </nav>
           </div>
 
