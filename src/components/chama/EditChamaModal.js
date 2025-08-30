@@ -1,9 +1,9 @@
-// File Path: src/components/chama/EditChamaModal.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { Save, Settings, DollarSign, Calendar, Users, RotateCcw } from 'lucide-react';
 
 export default function EditChamaModal({ chama, isOpen, onClose, onUpdate }) {
   const [formData, setFormData] = useState({});
@@ -68,101 +68,252 @@ export default function EditChamaModal({ chama, isOpen, onClose, onUpdate }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
-        <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Edit Chama Details</h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
-                <XMarkIcon className="w-6 h-6" />
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 sm:p-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="bg-white/20 rounded-lg p-2 mr-4">
+                <Settings className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold">Edit Chama Details</h2>
+                <p className="text-blue-100 mt-1">Update your group's information and settings</p>
+              </div>
+            </div>
+            <button 
+              onClick={onClose} 
+              className="text-white/80 hover:text-white hover:bg-white/20 rounded-lg p-2 transition-all duration-200"
+            >
+              <XMarkIcon className="w-6 h-6" />
             </button>
+          </div>
         </div>
-        
-        <form onSubmit={handleSaveChanges} className="space-y-6 max-h-[70vh] overflow-y-auto pr-4">
-            {/* Basic Info */}
-            <fieldset className="border p-4 rounded-md">
-                <legend className="text-lg font-semibold px-2">Basic Information</legend>
-                <div className="space-y-4 pt-2">
-                    <div>
-                        <label className="block text-sm font-medium">Chama Name</label>
-                        <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full border p-2 rounded mt-1" required />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium">Description</label>
-                        <textarea name="description" value={formData.description} onChange={handleChange} className="w-full border p-2 rounded mt-1" rows="3"></textarea>
-                    </div>
+
+        {/* Modal Content */}
+        <div className="p-6 sm:p-8 max-h-[calc(90vh-120px)] overflow-y-auto">
+          <form onSubmit={handleSaveChanges} className="space-y-8">
+            {/* Basic Information Section */}
+            <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl p-6 border border-blue-100">
+              <div className="flex items-center mb-6">
+                <div className="bg-blue-100 rounded-lg p-2 mr-3">
+                  <Users className="h-5 w-5 text-blue-600" />
                 </div>
-            </fieldset>
-
-            {/* Financials */}
-            <fieldset className="border p-4 rounded-md">
-                <legend className="text-lg font-semibold px-2">Financials</legend>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <div>
-                        <label className="block text-sm font-medium">Contribution Amount (KES)</label>
-                        <input type="number" name="contributionAmount" value={formData.contributionAmount} onChange={handleChange} className="w-full border p-2 rounded mt-1" required />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium">Contribution Frequency</label>
-                        <select name="contributionFrequency" value={formData.contributionFrequency} onChange={handleChange} className="w-full border p-2 rounded mt-1">
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
-                            <option value="quarterly">Quarterly</option>
-                        </select>
-                    </div>
+                <h3 className="text-xl font-bold text-gray-800">Basic Information</h3>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Chama Name *
+                  </label>
+                  <input 
+                    type="text" 
+                    name="name" 
+                    value={formData.name || ''} 
+                    onChange={handleChange} 
+                    className="w-full border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 p-3 rounded-lg transition-all duration-200 text-gray-800 placeholder-gray-400"
+                    placeholder="Enter your Chama name"
+                    required 
+                  />
                 </div>
-            </fieldset>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea 
+                    name="description" 
+                    value={formData.description || ''} 
+                    onChange={handleChange} 
+                    className="w-full border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 p-3 rounded-lg transition-all duration-200 text-gray-800 placeholder-gray-400 resize-none"
+                    placeholder="Describe your Chama's purpose and goals"
+                    rows="4"
+                  />
+                </div>
+              </div>
+            </div>
 
-            {/* --- TYPE-SPECIFIC SETTINGS --- */}
+            {/* Financial Settings Section */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
+              <div className="flex items-center mb-6">
+                <div className="bg-green-100 rounded-lg p-2 mr-3">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800">Financial Settings</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Contribution Amount (KES) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">KES</span>
+                    <input 
+                      type="number" 
+                      name="contributionAmount" 
+                      value={formData.contributionAmount || ''} 
+                      onChange={handleChange} 
+                      className="w-full border-2 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 p-3 pl-12 rounded-lg transition-all duration-200 text-gray-800"
+                      placeholder="5000"
+                      min="1"
+                      required 
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Contribution Frequency *
+                  </label>
+                  <select 
+                    name="contributionFrequency" 
+                    value={formData.contributionFrequency || 'monthly'} 
+                    onChange={handleChange} 
+                    className="w-full border-2 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 p-3 rounded-lg transition-all duration-200 text-gray-800 bg-white"
+                  >
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                  </select>
+                </div>
+              </div>
+            </div>
 
-            {/* Equal Sharing Settings */}
+            {/* Type-Specific Settings */}
             {chama.operationType === 'equal_sharing' && (
-                <fieldset className="border p-4 rounded-md">
-                    <legend className="text-lg font-semibold px-2">Equal Sharing Settings</legend>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                         <div>
-                            <label className="block text-sm font-medium">Savings Target (KES)</label>
-                            <input type="number" name="targetAmount" value={formData.equalSharing.targetAmount || ''} onChange={(e) => handleNestedChange('equalSharing', e)} className="w-full border p-2 rounded mt-1" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium">Savings End Date</label>
-                            <input type="date" name="savingEndDate" value={(formData.equalSharing.savingEndDate || '').split('T')[0]} onChange={(e) => handleNestedChange('equalSharing', e)} className="w-full border p-2 rounded mt-1" />
-                        </div>
+              <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-6 border border-amber-100">
+                <div className="flex items-center mb-6">
+                  <div className="bg-amber-100 rounded-lg p-2 mr-3">
+                    <Calendar className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800">Equal Sharing Settings</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Savings Target (KES)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">KES</span>
+                      <input 
+                        type="number" 
+                        name="targetAmount" 
+                        value={formData.equalSharing?.targetAmount || ''} 
+                        onChange={(e) => handleNestedChange('equalSharing', e)} 
+                        className="w-full border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 p-3 pl-12 rounded-lg transition-all duration-200 text-gray-800"
+                        placeholder="50000"
+                        min="1"
+                      />
                     </div>
-                </fieldset>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Savings End Date
+                    </label>
+                    <input 
+                      type="date" 
+                      name="savingEndDate" 
+                      value={(formData.equalSharing?.savingEndDate || '').split('T')[0]} 
+                      onChange={(e) => handleNestedChange('equalSharing', e)} 
+                      className="w-full border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 p-3 rounded-lg transition-all duration-200 text-gray-800"
+                    />
+                  </div>
+                </div>
+              </div>
             )}
             
-            {/* Rotation Payout Settings */}
             {chama.operationType === 'rotation_payout' && (
-                <fieldset className="border p-4 rounded-md">
-                    <legend className="text-lg font-semibold px-2">Rotation Payout Settings</legend>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                         <div>
-                            <label className="block text-sm font-medium">Payout Amount (KES)</label>
-                            <input type="number" name="payoutAmount" value={formData.rotationPayout.payoutAmount || ''} onChange={(e) => handleNestedChange('rotationPayout', e)} className="w-full border p-2 rounded mt-1" required/>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium">Payout Frequency</label>
-                            <select name="payoutFrequency" value={formData.rotationPayout.payoutFrequency || 'monthly'} onChange={(e) => handleNestedChange('rotationPayout', e)} className="w-full border p-2 rounded mt-1">
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                            </select>
-                        </div>
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-100">
+                <div className="flex items-center mb-6">
+                  <div className="bg-purple-100 rounded-lg p-2 mr-3">
+                    <RotateCcw className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800">Rotation Payout Settings</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Payout Amount (KES) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">KES</span>
+                      <input 
+                        type="number" 
+                        name="payoutAmount" 
+                        value={formData.rotationPayout?.payoutAmount || ''} 
+                        onChange={(e) => handleNestedChange('rotationPayout', e)} 
+                        className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 p-3 pl-12 rounded-lg transition-all duration-200 text-gray-800"
+                        placeholder="10000"
+                        min="1"
+                        required
+                      />
                     </div>
-                    <p className="text-xs text-gray-500 mt-3">The order of member payouts is managed in the "Rotation" tab.</p>
-                </fieldset>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Payout Frequency *
+                    </label>
+                    <select 
+                      name="payoutFrequency" 
+                      value={formData.rotationPayout?.payoutFrequency || 'monthly'} 
+                      onChange={(e) => handleNestedChange('rotationPayout', e)} 
+                      className="w-full border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 p-3 rounded-lg transition-all duration-200 text-gray-800 bg-white"
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="mt-4 p-3 bg-purple-100/50 rounded-lg border border-purple-200">
+                  <p className="text-sm text-purple-700 flex items-center">
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    The order of member payouts is managed in the "Rotation" tab.
+                  </p>
+                </div>
+              </div>
             )}
 
             {/* Form Actions */}
-            <div className="flex justify-end space-x-4 pt-4">
-                <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg font-semibold">Cancel</button>
-                <button type="submit" disabled={isSaving} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold disabled:bg-gray-400">
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+            <div className="bg-gray-50 rounded-xl p-6 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+                <button 
+                  type="button" 
+                  onClick={onClose} 
+                  className="w-full sm:w-auto px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 focus:ring-2 focus:ring-gray-200"
+                >
+                  Cancel
                 </button>
+                <button 
+                  type="submit" 
+                  disabled={isSaving} 
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none transform hover:scale-105 disabled:scale-100 focus:ring-2 focus:ring-blue-200"
+                >
+                  {isSaving ? (
+                    <span className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Saving Changes...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <Save className="h-5 w-5 mr-2" />
+                      Save Changes
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
 }
-

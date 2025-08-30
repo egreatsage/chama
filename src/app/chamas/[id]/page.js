@@ -13,6 +13,7 @@ import MembersList from '@/components/chama/MembersList';
 import RotationTab from '@/components/chama/RotationTab';
 import EqualSharingTab from '@/components/chama/EqualSharingTab';
 import ContributionsTab from '@/components/chama/ContributionsTab';
+import EditChamaModal from '@/components/chama/EditChamaModal';
 
 // Main Page Component
 export default function ChamaDetailPage() {
@@ -21,6 +22,7 @@ export default function ChamaDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { user } = useAuthStore(); // Get the currently logged-in user
 
   const params = useParams();
@@ -62,6 +64,11 @@ export default function ChamaDetailPage() {
   useEffect(() => {
     fetchData();
   }, [id]);
+
+    const handleUpdateChama = (updatedChamaData) => {
+    setChama(updatedChamaData);
+    fetchData(); 
+  };
 
   // --- Render Logic ---
   if (isLoading) {
@@ -129,7 +136,7 @@ export default function ChamaDetailPage() {
     <ProtectedRoute>
       <Toaster position="top-right" />
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <ChamaDetailHeader chama={chama} setChama={setChama} />
+        <ChamaDetailHeader chama={chama} setChama={setChama} onEditClick={() => setIsEditModalOpen(true)} />
 
         <div className="mt-6">
           <div className="border-b border-gray-200">
@@ -166,6 +173,12 @@ export default function ChamaDetailPage() {
           <div className="py-6">{renderTabContent()}</div>
         </div>
       </div>
+      <EditChamaModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        chama={chama}
+        onUpdate={handleUpdateChama}
+      />
     </ProtectedRoute>
   );
 }
