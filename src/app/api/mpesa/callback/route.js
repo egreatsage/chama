@@ -1,9 +1,10 @@
+// File Path: src/app/api/mpesa/callback/route.js
 import { connectDB } from "@/lib/dbConnect";
 import { sendInvoiceEmail } from "@/lib/email";
 import Contribution from "@/models/Contribution";
 import Invoice from "@/models/Invoice";
 import User from "@/models/User";
-import Chama from "@/models/Chama"; // Import the Chama model
+import Chama from "@/models/Chama";
 
 export async function POST(request) {
   await connectDB();
@@ -12,6 +13,7 @@ export async function POST(request) {
     const { Body } = callbackData;
 
     if (!Body?.stkCallback) {
+      console.error("Invalid callback format received.");
       return new Response(JSON.stringify({ error: "Invalid callback format" }), { status: 400 });
     }
 
@@ -19,13 +21,14 @@ export async function POST(request) {
     const contribution = await Contribution.findOne({ checkoutRequestId: CheckoutRequestID });
 
     if (!contribution) {
+      console.error(`Contribution not found for CheckoutRequestID: ${CheckoutRequestID}`);
       return new Response(JSON.stringify({ error: "Contribution not found" }), { status: 404 });
     }
 
     if (ResultCode === 0) {
       // Payment successful
       const metadata = CallbackMetadata?.Item || [];
-      const amount = metadata.find((i) => i.Name === "Amount")?.Value;
+      const amount = parseFloat(metadata.find((i) => i.Name === "Amount")?.Value || 0);
       const receipt = metadata.find((i) => i.Name === "MpesaReceiptNumber")?.Value;
       const phone = metadata.find((i) => i.Name === "PhoneNumber")?.Value;
       const date = metadata.find((i) => i.Name === "TransactionDate")?.Value;
@@ -37,13 +40,16 @@ export async function POST(request) {
       contribution.amount = amount;
       await contribution.save();
 
-      // --- NEW LOGIC: Update Chama Balance ---
-      if (contribution.chamaId && contribution.amount > 0) {
+      // --- ROBUSTNESS FIX: Ensure chamaId exists before updating the balance ---
+      if (contribution.chamaId && amount > 0) {
         await Chama.findByIdAndUpdate(contribution.chamaId, {
-          $inc: { currentBalance: contribution.amount }
+          $inc: { currentBalance: amount } // Use the parsed amount
         });
+        console.log(`Successfully updated balance for Chama ID: ${contribution.chamaId}`);
+      } else {
+        console.error(`CRITICAL: Contribution ${contribution._id} was confirmed but is missing a chamaId. Balance not updated.`);
       }
-      // --- END OF NEW LOGIC ---
+      // --- END OF FIX ---
 
       try {
         const user = await User.findById(contribution.userId);
@@ -51,14 +57,14 @@ export async function POST(request) {
           const newInvoice = await Invoice.create({
             userId: contribution.userId,
             contributionId: contribution._id,
-            invoiceNumber: `INV-${contribution.mpesaReceiptNumber}`,
-            amount: contribution.amount,
+            invoiceNumber: `INV-${receipt}`,
+            amount: amount,
             status: "paid",
           });
           await sendInvoiceEmail({ to: user.email, invoice: newInvoice });
         }
       } catch (error) {
-        console.error("Error sending invoice email:", error);
+        console.error("Error creating invoice or sending email:", error);
       }
     } else {
       contribution.status = "failed";
@@ -72,3 +78,4 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
   }
 }
+

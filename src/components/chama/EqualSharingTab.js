@@ -17,7 +17,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
   const [cycles, setCycles] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [isDistributing, setIsDistributing] = useState(false);
-
+  console.log('Chama head:', userRole);
   useEffect(() => {
     const fetchCycleHistory = async () => {
       setIsLoadingHistory(true);
