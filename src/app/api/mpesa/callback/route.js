@@ -1,74 +1,91 @@
+// File Path: src/app/api/mpesa/stkpush/route.js
+import { cookies } from "next/headers";
+import { getAccessToken, getTimestamp } from "@/lib/mpesa";
+import axios from "axios";
 import { connectDB } from "@/lib/dbConnect";
-import { sendInvoiceEmail } from "@/lib/email";
 import Contribution from "@/models/Contribution";
-import Invoice from "@/models/Invoice";
-import User from "@/models/User";
-import Chama from "@/models/Chama"; // Import the Chama model
+import jwt from 'jsonwebtoken';
 
 export async function POST(request) {
-  await connectDB();
   try {
-    const callbackData = await request.json();
-    const { Body } = callbackData;
+    await connectDB();
 
-    if (!Body?.stkCallback) {
-      return new Response(JSON.stringify({ error: "Invalid callback format" }), { status: 400 });
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth-token")?.value;
+    
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
     }
 
-    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback;
-    const contribution = await Contribution.findOne({ checkoutRequestId: CheckoutRequestID });
-
-    if (!contribution) {
-      return new Response(JSON.stringify({ error: "Contribution not found" }), { status: 404 });
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401 });
     }
 
-    if (ResultCode === 0) {
-      // Payment successful
-      const metadata = CallbackMetadata?.Item || [];
-      const amount = metadata.find((i) => i.Name === "Amount")?.Value;
-      const receipt = metadata.find((i) => i.Name === "MpesaReceiptNumber")?.Value;
-      const phone = metadata.find((i) => i.Name === "PhoneNumber")?.Value;
-      const date = metadata.find((i) => i.Name === "TransactionDate")?.Value;
+    const userId = decoded.userId;
 
-      contribution.status = "confirmed";
-      contribution.mpesaReceiptNumber = receipt;
-      contribution.transactionDate = date;
-      contribution.phoneNumber = phone;
-      contribution.amount = amount;
-      await contribution.save();
-
-      // --- NEW LOGIC: Update Chama Balance ---
-      if (contribution.chamaId && contribution.amount > 0) {
-        await Chama.findByIdAndUpdate(contribution.chamaId, {
-          $inc: { currentBalance: contribution.amount }
-        });
-      }
-      // --- END OF NEW LOGIC ---
-
-      try {
-        const user = await User.findById(contribution.userId);
-        if (user) {
-          const newInvoice = await Invoice.create({
-            userId: contribution.userId,
-            contributionId: contribution._id,
-            invoiceNumber: `INV-${contribution.mpesaReceiptNumber}`,
-            amount: contribution.amount,
-            status: "paid",
-          });
-          await sendInvoiceEmail({ to: user.email, invoice: newInvoice });
-        }
-      } catch (error) {
-        console.error("Error sending invoice email:", error);
-      }
-    } else {
-      contribution.status = "failed";
-      contribution.failureReason = ResultDesc;
-      await contribution.save();
+    // --- FIX: Destructure chamaId from the request body ---
+    const { phoneNumber, amount, chamaId } = await request.json();
+    
+    if (!phoneNumber || !amount || !chamaId) {
+      return new Response(JSON.stringify({ error: "Missing required fields (phoneNumber, amount, chamaId)" }), { status: 400 });
     }
 
-    return new Response(JSON.stringify({ message: "Callback processed" }), { status: 200 });
+    let formattedPhone = phoneNumber;
+    if (phoneNumber.startsWith("0")) {
+      formattedPhone = `254${phoneNumber.slice(1)}`;
+    } else if (phoneNumber.startsWith("+254")) {
+      formattedPhone = phoneNumber.slice(1);
+    }
+
+    if (!/^254\d{9}$/.test(formattedPhone)) {
+      return new Response(JSON.stringify({ error: "Invalid Safaricom number" }), { status: 400 });
+    }
+
+    const accessToken = await getAccessToken();
+    const timestamp = getTimestamp();
+    const shortCode = process.env.MPESA_BUSINESS_SHORT_CODE;
+    const passkey = process.env.MPESA_PASSKEY;
+    const callbackURL = process.env.NEXT_PUBLIC_CALLBACK_URL;
+
+    const password = Buffer.from(shortCode + passkey + timestamp).toString("base64");
+
+    const payload = {
+      BusinessShortCode: shortCode,
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: "CustomerPayBillOnline",
+      Amount: amount,
+      PartyA: formattedPhone,
+      PartyB: shortCode,
+      PhoneNumber: formattedPhone,
+      CallBackURL: callbackURL,
+      AccountReference: "Chama Contribution",
+      TransactionDesc: "Member contribution",
+    };
+
+    const response = await axios.post(
+      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+      payload,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    // --- FIX: Include chamaId when creating the contribution ---
+    await Contribution.create({
+      chamaId, // Add this line
+      userId,
+      amount,
+      status: "pending",
+      checkoutRequestId: response.data.CheckoutRequestID,
+      phoneNumber: phoneNumber,
+      paymentMethod: "mpesa",
+    });
+
+    return new Response(JSON.stringify(response.data), { status: 200 });
   } catch (error) {
-    console.error("Callback Error:", error);
-    return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
+    console.error("STK Push Error:", error.message);
+    return new Response(JSON.stringify({ error: "Failed to initiate payment" }), { status: 500 });
   }
 }
