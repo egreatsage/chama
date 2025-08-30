@@ -112,7 +112,7 @@ export default function RulesTab({ chama, userRole }) {
                     value={rules.latePenalty?.amount || ''}
                     onChange={(e) => handleChange('latePenalty.amount', e.target.value)}
                     className="w-full border p-2 rounded mt-1" 
-                    disabled={!isChairperson}
+                    disabled={isChairperson}
                 />
               </div>
               <div>
