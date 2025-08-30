@@ -1,3 +1,4 @@
+// File Path: src/app/api/mpesa/stkpush/route.js
 import { cookies } from "next/headers";
 import { getAccessToken, getTimestamp } from "@/lib/mpesa";
 import axios from "axios";
@@ -9,7 +10,6 @@ export async function POST(request) {
   try {
     await connectDB();
 
-    // Get token from auth-token cookie and verify it
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token")?.value;
     
@@ -17,7 +17,6 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
     }
 
-    // Verify JWT token
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -27,12 +26,17 @@ export async function POST(request) {
 
     const userId = decoded.userId;
 
-    const { phoneNumber, amount } = await request.json();
-    if (!phoneNumber || !amount) {
-      return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
+    // --- ENHANCED DEBUGGING: Log the entire request body ---
+    const body = await request.json();
+    console.log("Received STK Push Request Body:", body);
+    const { phoneNumber, amount, chamaId } = body;
+    
+    // --- More Robust Check ---
+    if (!phoneNumber || !amount || !chamaId || typeof chamaId !== 'string' || chamaId.trim() === '') {
+      console.error("Validation Error: Missing or invalid fields.", { phoneNumber, amount, chamaId });
+      return new Response(JSON.stringify({ error: "Missing required fields (phoneNumber, amount, chamaId)" }), { status: 400 });
     }
 
-    // Format phone number
     let formattedPhone = phoneNumber;
     if (phoneNumber.startsWith("0")) {
       formattedPhone = `254${phoneNumber.slice(1)}`;
@@ -72,23 +76,21 @@ export async function POST(request) {
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
-    // Save pending contribution
+    // --- FIX: Include chamaId when creating the contribution ---
     await Contribution.create({
+      chamaId, // Add this line
       userId,
       amount,
       status: "pending",
       checkoutRequestId: response.data.CheckoutRequestID,
-      mpesaReceiptNumber: response.data.mpesaReceiptNumber,
-      transactionDate: response.data.TransactionDate,
-      failureReason: response.data.resultDec,
-      ResultCode: response.data.ResultCode,
       phoneNumber: phoneNumber,
       paymentMethod: "mpesa",
     });
 
     return new Response(JSON.stringify(response.data), { status: 200 });
   } catch (error) {
-    console.error("STK Push Error:", error.response?.data || error.message);
+    console.error("STK Push Error:", error.message);
     return new Response(JSON.stringify({ error: "Failed to initiate payment" }), { status: 500 });
   }
 }
+
