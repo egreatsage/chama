@@ -1,35 +1,26 @@
+// File Path: src/models/ChamaCycle.js
 import mongoose, { Schema, models } from "mongoose";
 
-const PayoutEntrySchema = new Schema({
+const PayoutSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  amountReceived: { type: Number, required: true }
+  amount: { type: Number, required: true },
 }, { _id: false });
 
 const ChamaCycleSchema = new Schema({
-  chamaId: { type: Schema.Types.ObjectId, ref: 'Chama', required: true },
+  chamaId: { type: Schema.Types.ObjectId, ref: 'Chama', required: true, index: true },
+  cycleType: { type: String, enum: ['equal_sharing'], default: 'equal_sharing' },
   
-  // Identifies what kind of cycle this was
-  type: { 
-    type: String, 
-    enum: ['equal_sharing', 'rotation_payout', 'group_purchase'], 
-    required: true 
-  },
+  // For Equal Sharing
+  targetAmount: { type: Number, required: true },
+  totalCollected: { type: Number, required: true },
+  payouts: [PayoutSchema],
   
-  // General Cycle Information
-  cycleNumber: { type: Number, required: true },
   startDate: { type: Date, required: true },
   endDate: { type: Date, default: Date.now },
-  totalAmountDistributed: { type: Number, required: true },
-  
-  // Specific to Equal Sharing
-  payouts: [PayoutEntrySchema],
-  
-  status: { type: String, enum: ['active', 'completed'], default: 'completed' }
+  distributedBy: { type: Schema.Types.ObjectId, ref: 'User' },
 
 }, { timestamps: true });
 
-// Index for efficient querying
-ChamaCycleSchema.index({ chamaId: 1, cycleNumber: 1 }, { unique: true });
-
 const ChamaCycle = models.ChamaCycle || mongoose.model("ChamaCycle", ChamaCycleSchema);
 export default ChamaCycle;
+

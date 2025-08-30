@@ -1,3 +1,4 @@
+// File Path: src/models/Chama.js
 import mongoose, { Schema, models } from "mongoose";
 
 // --- Sub-schemas for different operation types ---
@@ -31,28 +32,29 @@ const ChamaSchema = new Schema({
   description: { type: String },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   
-  // --- New Operation Type Field ---
   operationType: {
     type: String,
     enum: ['equal_sharing', 'rotation_payout', 'group_purchase'],
     required: true,
-    default: 'equal_sharing' // A safe default
+    default: 'equal_sharing'
   },
 
-  // --- Basic Financial Config (already exists) ---
   contributionAmount: { type: Number, default: 0 },
   contributionFrequency: { 
     type: String, 
     enum: ['daily', 'weekly', 'monthly', 'quarterly'], 
     default: 'monthly' 
   },
+  
+  // Financial Summary
+  currentBalance: { type: Number, default: 0 },
+  totalContributions: { type: Number, default: 0 }, // New field for lifetime total
 
-  // --- Type-Specific Configurations ---
+  // Type-Specific Configurations
   equalSharing: { type: EqualSharingSchema },
   rotationPayout: { type: RotationPayoutSchema },
   groupPurchase: { type: GroupPurchaseSchema },
 
-  // --- Status and Approval (already exists) ---
   status: { 
     type: String, 
     enum: ['pending', 'approved', 'active', 'suspended', 'closed'], 
