@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDB } from "@/lib/dbConnect";
 import Chama from "@/models/Chama";
 import ChamaMember from "@/models/ChamaMember";
-import ChamaRules from "@/models/ChamaRules"; // Import the new rules model
+import ChamaRules from "@/models/ChamaRules";
 import { getServerSideUser } from '@/lib/auth';
 
 export async function POST(request) {
@@ -29,9 +29,18 @@ export async function POST(request) {
       contributionAmount: Number(contributionAmount) || 0,
       contributionFrequency: contributionFrequency || 'monthly',
       status: 'pending',
-      // Add the type-specific config based on the operationType
-      [operationType]: typeSpecificConfig 
     };
+
+    // --- FIX: Manually map operationType to the correct schema field ---
+    // This ensures the data is saved under the correct key (e.g., 'equalSharing')
+    if (operationType === 'equal_sharing') {
+      chamaData.equalSharing = typeSpecificConfig;
+    } else if (operationType === 'rotation_payout') {
+      chamaData.rotationPayout = typeSpecificConfig;
+    } else if (operationType === 'group_purchase') {
+      chamaData.groupPurchase = typeSpecificConfig;
+    }
+    // --- END OF FIX ---
 
     const newChama = await Chama.create(chamaData);
 
