@@ -1,10 +1,11 @@
 // File Path: src/components/chama/ChamaDetailHeader.js
 'use client';
 
+import { PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-export default function ChamaDetailHeader({ chama, setChama }) {
+export default function ChamaDetailHeader({ chama, setChama, onEditClick }) {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ name: chama.name, description: chama.description });
 
@@ -41,13 +42,15 @@ export default function ChamaDetailHeader({ chama, setChama }) {
                   </div>
               )}
             
-              {chama.userRole === 'chairperson' && (
+            {chama.userRole === 'chairperson' && (
                   <div className="ml-4 flex-shrink-0">
-                    {isEditing ? (
-                        <div className="flex space-x-2"><button onClick={handleSave} className="bg-indigo-600 text-white px-3 py-1 rounded-md text-sm">Save</button><button onClick={() => setIsEditing(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm">Cancel</button></div>
-                    ) : (
-                        <button onClick={() => setIsEditing(true)} className="bg-white text-gray-700 px-3 py-1 border rounded-md text-sm">Edit</button>
-                    )}
+                    <button 
+                        onClick={onEditClick} 
+                        className="inline-flex items-center bg-white text-gray-700 px-4 py-2 border rounded-md text-sm font-semibold hover:bg-gray-50"
+                    >
+                        <PencilSquareIcon className="w-5 h-5 mr-2" />
+                        Edit Chama
+                    </button>
                   </div>
               )}
             </div>

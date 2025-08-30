@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        const { id: chamaId } =await params;
+        const { id: chamaId } = params;
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
 
         if (!membership) {
@@ -42,6 +42,59 @@ export async function GET(request, { params }) {
     }
 }
 
+// PUT: Update a Chama's details
+export async function PUT(request, { params }) {
+    await connectDB();
+    try {
+        const user = await getServerSideUser();
+        const { id: chamaId } = params;
+
+        if (!user) {
+            return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+        }
+
+        // Authorization: Ensure the user is the chairperson
+        const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
+        if (!membership || membership.role !== 'chairperson') {
+            return NextResponse.json({ error: "Only the chairperson can edit this Chama." }, { status: 403 });
+        }
+
+        const body = await request.json();
+        const { name, description, contributionAmount, contributionFrequency, equalSharing, rotationPayout } = body;
+
+        const updateData = {
+            name,
+            description,
+            contributionAmount,
+            contributionFrequency,
+            // Use dot notation to update nested objects safely
+            'equalSharing.targetAmount': equalSharing.targetAmount,
+            'equalSharing.savingEndDate': equalSharing.savingEndDate,
+            'rotationPayout.payoutAmount': rotationPayout.payoutAmount,
+            'rotationPayout.payoutFrequency': rotationPayout.payoutFrequency,
+        };
+
+        const updatedChama = await Chama.findByIdAndUpdate(chamaId, { $set: updateData }, { new: true, runValidators: true });
+
+        if (!updatedChama) {
+            return NextResponse.json({ error: "Chama not found." }, { status: 404 });
+        }
+        
+        // Return the full updated chama object with the user's role
+        const responseData = {
+            ...updatedChama.toObject(),
+            userRole: membership.role,
+        };
+
+        return NextResponse.json({ message: "Chama updated successfully.", chama: responseData });
+
+    } catch (error) {
+        console.error("Failed to update Chama:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
+
+
 // POST: Invite a new member to the Chama
 export async function POST(request, { params }) {
     await connectDB();
@@ -51,13 +104,11 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
         
-        // --- FIX: Removed incorrect `await` from params ---
         const { id: chamaId } = params;
         const { email } = await request.json();
 
-        // Security Check: Verify user is an admin for this chama
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
-        if (!membership || membership.role !== 'chairperson') { // Changed from 'admin' to 'chairperson' to be consistent
+        if (!membership || membership.role !== 'chairperson') {
             return NextResponse.json({ error: "Only the chairperson can invite members." }, { status: 403 });
         }
 
