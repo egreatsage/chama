@@ -6,6 +6,7 @@ import Chama from "@/models/Chama";
 import ChamaMember from "@/models/ChamaMember";
 import Contribution from "@/models/Contribution";
 import User from '@/models/User';
+import { sendManualContributionEmail } from '@/lib/email'; // Import the new email function
 
 // GET: Fetch all contributions for a specific Chama
 export async function GET(request, { params }) {
@@ -40,40 +41,54 @@ export async function GET(request, { params }) {
   }
 }
 
+
 // POST: Add a manual (e.g., cash) contribution
 export async function POST(request, { params }) {
   await connectDB();
   try {
-    const user = await getServerSideUser();
-    const { id: chamaId } = await params;
+    const adminUser = await getServerSideUser(); // The admin performing the action
+    const { id: chamaId } = params;
     const { memberId, amount, notes } = await request.json();
 
     if (!memberId || !amount) {
       return NextResponse.json({ error: "Member and amount are required." }, { status: 400 });
     }
 
-    // Authorization: Only chairperson or treasurer can add manual contributions
-    const adminMembership = await ChamaMember.findOne({ userId: user.id, chamaId });
+    const adminMembership = await ChamaMember.findOne({ userId: adminUser.id, chamaId });
     if (!adminMembership || !['chairperson', 'treasurer'].includes(adminMembership.role)) {
       return NextResponse.json({ error: "You do not have permission to add contributions." }, { status: 403 });
     }
     
-    // 1. Create the contribution record
     const newContribution = await Contribution.create({
       chamaId,
       userId: memberId,
       amount: Number(amount),
       paymentMethod: 'cash',
-      status: 'confirmed', // Manual entries are confirmed by default
-      notes: notes || 'Cash contribution recorded by chairperson.'
+      status: 'confirmed',
+      notes: notes || `Recorded by ${adminUser.firstName}`
     });
 
-    // 2. Atomically update the Chama's current balance
     await Chama.findByIdAndUpdate(chamaId, {
       $inc: { currentBalance: newContribution.amount }
     });
 
-    // TODO: Send an email notification to the member about the recorded contribution
+    // --- NEW: Send Email Notification ---
+    try {
+        const member = await User.findById(memberId);
+        const chama = await Chama.findById(chamaId);
+        if (member && chama) {
+            await sendManualContributionEmail({
+                to: member.email,
+                memberName: member.firstName,
+                chamaName: chama.name,
+                amount: newContribution.amount,
+                adminName: adminUser.firstName
+            });
+        }
+    } catch (emailError) {
+        console.error("Contribution saved, but failed to send email:", emailError);
+    }
+    // --- END ---
 
     return NextResponse.json({ 
       message: 'Contribution recorded successfully.', 

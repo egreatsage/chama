@@ -5,12 +5,14 @@ import { getServerSideUser } from '@/lib/auth';
 import Chama from "@/models/Chama";
 import ChamaMember from "@/models/ChamaMember";
 import ChamaCycle from "@/models/ChamaCycle";
+import User from '@/models/User';
+import { sendPayoutNotificationEmail } from '@/lib/email';
 
 export async function POST(request, { params }) {
   await connectDB();
   try {
     const user = await getServerSideUser();
-    const { id: chamaId } = await params;
+    const { id: chamaId } = params;
 
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -23,7 +25,6 @@ export async function POST(request, { params }) {
 
     // Authorization: Only chairperson can trigger distribution
     const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
-    console
     if (!membership || membership.role !== 'chairperson') {
       return NextResponse.json({ error: "Only the chairperson can distribute funds." }, { status: 403 });
     }
@@ -34,17 +35,20 @@ export async function POST(request, { params }) {
         return NextResponse.json({ error: "Savings goal has not been reached yet." }, { status: 400 });
     }
 
-    const members = await ChamaMember.find({ chamaId, status: 'active' });
+    // Populate userId to get member details for emails
+    const members = await ChamaMember.find({ chamaId, status: 'active' }).populate('userId');
     if (members.length === 0) {
       return NextResponse.json({ error: "No active members to distribute funds to." }, { status: 400 });
     }
     
     // Calculate share per member
-    const shareAmount = chama.currentBalance / members.length;
+    const totalToDistribute = chama.currentBalance;
+    const shareAmount = totalToDistribute / members.length;
+    const cycleEndDate = new Date();
 
     // Create payout records for the historical cycle
     const payouts = members.map(member => ({
-      userId: member.userId,
+      userId: member.userId._id,
       amount: shareAmount
     }));
 
@@ -53,19 +57,37 @@ export async function POST(request, { params }) {
       chamaId,
       cycleType: 'equal_sharing',
       targetAmount,
-      totalCollected: chama.currentBalance,
+      totalCollected: totalToDistribute,
       payouts,
-      startDate: chama.createdAt, // Note: This could be improved to track specific cycle start dates in the future
+      startDate: chama.createdAt, // Note: This could be improved to track specific cycle start dates
+      endDate: cycleEndDate,
       distributedBy: user.id,
     });
 
-    // Atomically update the Chama: Reset the balance and add to total contributions
+    // Atomically update the Chama: Add to total and reset the balance
     await Chama.findByIdAndUpdate(chamaId, {
-      $inc: { totalContributions: chama.currentBalance }, // Add the distributed amount to the lifetime total
-      $set: { currentBalance: 0 } // Reset the current balance for the next cycle
+      $inc: { totalContributions: totalToDistribute },
+      $set: { currentBalance: 0 }
     });
     
-    // TODO: In a future step, you could send an email notification to all members about the successful payout.
+    // Send Payout Notification Emails to All Members
+    for (const member of members) {
+        try {
+            if (member.userId && member.userId.email) {
+                await sendPayoutNotificationEmail({
+                    to: member.userId.email,
+                    memberName: member.userId.firstName,
+                    chamaName: chama.name,
+                    totalDistributed: totalToDistribute,
+                    shareAmount: shareAmount,
+                    cycleEndDate: cycleEndDate
+                });
+            }
+        } catch (emailError) {
+            console.error(`Failed to send payout email to ${member.userId.email}:`, emailError);
+            // Continue the loop even if one email fails
+        }
+    }
 
     return NextResponse.json({ message: "Funds distributed and cycle recorded successfully." });
 
@@ -74,3 +96,4 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+

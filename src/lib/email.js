@@ -154,6 +154,62 @@ const createInvoiceHtml = (invoice) => {
     </html>
   `;
 };
+const createManualContributionHtml = ({ memberName, chamaName, amount, adminName }) => `
+  <!DOCTYPE html>
+  <html>
+  <body>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+      <h2 style="color: #333;">Contribution Recorded</h2>
+      <p>Hello ${memberName},</p>
+      <p>This is a confirmation that a manual contribution has been recorded for you in the <strong>${chamaName}</strong> chama.</p>
+      <div style="background-color: #f2f2f2; padding: 15px; border-radius: 5px;">
+        <p><strong>Amount:</strong> KES ${amount.toLocaleString()}</p>
+        <p><strong>Recorded By:</strong> ${adminName}</p>
+        <p><strong>Payment Method:</strong> Cash</p>
+      </div>
+      <p>This transaction will now be reflected in your contribution history in the app.</p>
+      <p>Thank you,<br/>The ChamaApp Team</p>
+    </div>
+  </body>
+  </html>
+`;
+export async function sendManualContributionEmail({ to, memberName, chamaName, amount, adminName }) {
+  const mailOptions = {
+    from: `"ChamaApp Notifications" <${process.env.EMAIL_USER}>`,
+    to,
+    subject: `A contribution was recorded for you in ${chamaName}`,
+    html: createManualContributionHtml({ memberName, chamaName, amount, adminName }),
+  };
+  await transporter.sendMail(mailOptions);
+}
+const createPayoutNotificationHtml = ({ memberName, chamaName, totalDistributed, shareAmount, cycleEndDate }) => `
+  <!DOCTYPE html>
+  <html>
+  <body>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+      <h2 style="color: #28a745;">Funds Distributed!</h2>
+      <p>Hello ${memberName},</p>
+      <p>Great news! The savings cycle for the <strong>${chamaName}</strong> chama has been completed and the funds have been distributed.</p>
+      <div style="background-color: #e9f5ec; padding: 15px; border-radius: 5px;">
+        <p><strong>Total Amount Distributed:</strong> KES ${totalDistributed.toLocaleString()}</p>
+        <p><strong>Your Share:</strong> KES ${shareAmount.toLocaleString()}</p>
+        <p><strong>Cycle End Date:</strong> ${new Date(cycleEndDate).toLocaleDateString()}</p>
+      </div>
+      <p>This payout is now recorded in your chama's history. A new savings cycle can now begin!</p>
+      <p>Congratulations on achieving your savings goal,<br/>The ChamaApp Team</p>
+    </div>
+  </body>
+  </html>
+`;
+export async function sendPayoutNotificationEmail({ to, memberName, chamaName, totalDistributed, shareAmount, cycleEndDate }) {
+    const mailOptions = {
+        from: `"ChamaApp Notifications" <${process.env.EMAIL_USER}>`,
+        to,
+        subject: `Your Payout from ${chamaName} has been distributed!`,
+        html: createPayoutNotificationHtml({ memberName, chamaName, totalDistributed, shareAmount, cycleEndDate }),
+    };
+    await transporter.sendMail(mailOptions);
+}
 
 /**
  * Sends a beautifully formatted invoice email to a user.
