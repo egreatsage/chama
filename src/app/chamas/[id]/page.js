@@ -24,7 +24,7 @@ export default function ChamaDetailPage() {
   const { user } = useAuthStore(); // Get the currently logged-in user
 
   const params = useParams();
-  const { id } = params;
+  const { id } =  params;
 
   // --- Data Fetching ---
   const fetchData = async () => {

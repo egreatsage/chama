@@ -17,7 +17,7 @@ export async function PUT(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId } = params;
+        const { id: chamaId } = await params;
         const { rotationOrder, randomize } = await request.json(); // Expects an array of member user IDs and a boolean
 
         if (!user || !(await isChairperson(user.id, chamaId))) {
@@ -66,7 +66,7 @@ export async function POST(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId } = params;
+        const { id: chamaId } = await params;
 
         if (!user || !(await isChairperson(user.id, chamaId))) {
             return NextResponse.json({ error: "Unauthorized: Only the chairperson can advance the rotation." }, { status: 403 });

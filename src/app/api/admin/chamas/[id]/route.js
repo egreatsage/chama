@@ -15,7 +15,7 @@ export async function PUT(request, { params }) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         const updateData = await request.json();
 
         const updatedChama = await Chama.findByIdAndUpdate(id, updateData, { new: true });
@@ -41,7 +41,7 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         
         // First, delete all members associated with the Chama
         await ChamaMember.deleteMany({ chamaId: id });

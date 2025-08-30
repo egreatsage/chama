@@ -20,7 +20,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const { status, amount } = await request.json();
 
     const updateData = {};
@@ -61,7 +61,7 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         const deletedWithdrawal = await Withdrawal.findByIdAndDelete(id);
 
         if (!deletedWithdrawal) {

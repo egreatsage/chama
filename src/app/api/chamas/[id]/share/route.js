@@ -10,7 +10,7 @@ export async function POST(request, { params }) {
   await connectDB();
   try {
     const user = await getServerSideUser();
-    const { id: chamaId } = params;
+    const { id: chamaId } = await params;
 
     // 1. Authorization: Check if user is the chairperson
     const membership = await ChamaMember.findOne({ userId: user.id, chamaId: chamaId });

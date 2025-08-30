@@ -1,3 +1,4 @@
+// File Path: src/app/api/chamas/[id]/route.js
 import { NextResponse } from 'next/server';
 import { connectDB } from "@/lib/dbConnect";
 import User from '@/models/User';
@@ -5,7 +6,7 @@ import Chama from "@/models/Chama";
 import ChamaMember from "@/models/ChamaMember";
 import { getServerSideUser } from '@/lib/auth';
 
-// GET: Fetch all members of a specific Chama
+// GET: Fetch details for a specific Chama
 export async function GET(request, { params }) {
     await connectDB();
     try {
@@ -16,7 +17,6 @@ export async function GET(request, { params }) {
 
         const { id } = await params;
 
-        // Security Check: This will now pass for the creator
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId: id });
         if (!membership) {
             return NextResponse.json({ error: "Access Forbidden: You are not a member of this Chama." }, { status: 403 });
@@ -27,8 +27,15 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: "Chama not found" }, { status: 404 });
         }
 
-        const chamaData = { ...chama.toObject(), userRole: membership.role };
+        // --- FIX: Add a fallback for the user's role ---
+        // This handles older database records that might not have a role defined.
+        const userRoleForThisChama = membership.role || 'member';
 
+        const chamaData = { 
+            ...chama.toObject(), 
+            userRole: userRoleForThisChama 
+        };
+       console.log('Chama data:', chamaData);
         return NextResponse.json({ chama: chamaData });
 
     } catch (error) {
@@ -37,7 +44,8 @@ export async function GET(request, { params }) {
     }
 }
 
-// POST: Invite a new member to the Chama
+
+// POST: Invite a new member to the Chama (remains unchanged)
 export async function POST(request, { params }) {
     await connectDB();
     try {

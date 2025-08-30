@@ -16,7 +16,7 @@ export async function PUT(request, { params }) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         const { action } = await request.json();
 
         if (!['approve', 'reject'].includes(action)) {
