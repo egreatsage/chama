@@ -130,9 +130,8 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
             </div>
           </div>
         )}
-        
-        {userRole === 'chairperson' && isGoalReached && (
-            <div className="mt-6 border-t pt-6 text-right">
+        {['chairperson', 'treasurer'].includes(userRole) && isGoalReached && (
+           <div className="mt-6 border-t pt-6 text-right">
                 <button 
                     onClick={handleDistribute}
                     disabled={isDistributing}
@@ -142,6 +141,17 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
                 </button>
             </div>
         )}
+        {/* {userRole === 'chairperson' && isGoalReached && (
+            <div className="mt-6 border-t pt-6 text-right">
+                <button 
+                    onClick={handleDistribute}
+                    disabled={isDistributing}
+                    className="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
+                >
+                    {isDistributing ? 'Processing...' : 'Distribute Funds'}
+                </button>
+            </div>
+        )} */}
       </div>
 
       {/* Payout History Section */}
