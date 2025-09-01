@@ -41,16 +41,22 @@ const getCurrentPeriod = (frequency) => {
 
 // PUT: Handles setting or updating the rotation order
 export async function PUT(request, { params }) {
-    // ... (This function remains unchanged and correct)
     await connectDB();
     try {
         const user = await getServerSideUser();
         const { id: chamaId } = params;
         const { rotationOrder, randomize } = await request.json();
 
-        if (!user || !(await isChairperson(user.id, chamaId))) {
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
+        
+        // --- FIX: Use the consistent, direct authorization check ---
+        const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
+        if (!membership || membership.role !== 'chairperson') {
             return NextResponse.json({ error: "Unauthorized: Only the chairperson can set the rotation order." }, { status: 403 });
         }
+        // --- END FIX ---
 
         if (!Array.isArray(rotationOrder)) {
             return NextResponse.json({ error: "Invalid rotation order provided." }, { status: 400 });
@@ -90,24 +96,19 @@ export async function POST(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId } = params;
+        const { id: chamaId } = await params;
 
         if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
         const chama = await Chama.findById(chamaId);
         if (!chama) return NextResponse.json({ error: "Chama not found." }, { status: 404 });
         
-        // 1. Authorization Check
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
         if (!membership || membership.role !== 'chairperson') {
             return NextResponse.json({ error: "Only the chairperson can execute a payout." }, { status: 403 });
         }
         
-        // --- FIX: Moved this logic inside the POST function ---
         const { start, end } = getCurrentPeriod(chama.contributionFrequency);
-        // --- END FIX ---
-
-        // 2. Contribution Check
         const activeMembers = await ChamaMember.find({ chamaId, status: 'active' });
         const contributionsInPeriod = await Contribution.find({ chamaId, status: 'confirmed', createdAt: { $gte: start, $lte: end } });
         
@@ -115,16 +116,14 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Cannot proceed. Not all members have contributed for this period." }, { status: 400 });
         }
 
-        // 3. Payout Logic
         const { rotationOrder, currentRecipientIndex } = chama.rotationPayout;
         const recipientUserId = rotationOrder[currentRecipientIndex];
         const recipientUser = await User.findById(recipientUserId);
         const totalPot = chama.contributionAmount * activeMembers.length;
 
-        // 4. Create Historical Record
         await ChamaCycle.create({
             chamaId,
-            type: 'rotation_cycle',
+            cycleType: 'rotation_cycle',
             cycleNumber: currentRecipientIndex + 1,
             startDate: start,
             endDate: new Date(),
@@ -134,13 +133,11 @@ export async function POST(request, { params }) {
             status: 'completed'
         });
 
-        // 5. Advance the Rotation
         const nextIndex = (currentRecipientIndex + 1) % rotationOrder.length;
         chama.rotationPayout.currentRecipientIndex = nextIndex;
         chama.currentBalance = 0;
         await chama.save();
         
-        // 6. Send Email Notification
         if (recipientUser) {
             await sendRotationPayoutEmail({
                 to: recipientUser.email,

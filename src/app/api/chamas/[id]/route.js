@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        const { id: chamaId } = params;
+        const { id: chamaId } = await params;
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
 
         if (!membership) {
