@@ -17,13 +17,21 @@ const RotationPayoutSchema = new Schema({
   payoutFrequency: { type: String, enum: ['daily', 'weekly', 'monthly'], default: 'monthly' },
 }, { _id: false });
 
-const GroupPurchaseSchema = new Schema({
-  // Simplified for now, can be expanded later
-  currentItemDescription: { type: String },
-  currentTargetAmount: { type: Number },
-  currentBeneficiaryId: { type: Schema.Types.ObjectId, ref: 'User' },
-}, { _id: false });
 
+
+const PurchaseGoalSchema = new Schema({
+    // FIX: Added `ref: 'User'` to allow Mongoose to populate this field
+    beneficiaryId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    itemDescription: { type: String, required: true },
+    targetAmount: { type: Number, required: true },
+    status: { type: String, enum: ['active', 'completed', 'queued'], default: 'queued' },
+    purchaseOrder: { type: Number }
+});
+const GroupPurchaseSchema = new Schema({
+  purchaseGoals: [PurchaseGoalSchema],
+  currentGoalId: { type: Schema.Types.ObjectId },
+  queueType: { type: String, enum: ['sequential', 'random'], default: 'sequential' },
+}, { _id: false });
 
 // --- Main Chama Schema ---
 

@@ -26,7 +26,11 @@ export async function GET(request, { params }) {
 
         if (!chama) return NextResponse.json({ error: "Chama not found." }, { status: 404 });
 
-        return NextResponse.json({ goals: chama.groupPurchase.purchaseGoals, currentGoalId: chama.groupPurchase.currentGoalId });
+        // Ensure we always return an array, even if groupPurchase doesn't exist on the doc
+        const goals = chama.groupPurchase?.purchaseGoals || [];
+        const currentGoalId = chama.groupPurchase?.currentGoalId;
+
+        return NextResponse.json({ goals, currentGoalId });
     } catch (error) {
         console.error("Failed to fetch goals:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -48,17 +52,23 @@ export async function POST(request, { params }) {
         }
 
         const chama = await Chama.findById(chamaId);
+        
+        // Defensive check to ensure the groupPurchase object exists
+        if (!chama.groupPurchase) {
+            chama.groupPurchase = { purchaseGoals: [] };
+        }
+
         const newGoal = {
             beneficiaryId,
             itemDescription,
             targetAmount: Number(targetAmount),
             status: 'queued',
-            purchaseOrder: chama.groupPurchase.purchaseGoals.length + 1
+            purchaseOrder: (chama.groupPurchase.purchaseGoals || []).length + 1
         };
 
         chama.groupPurchase.purchaseGoals.push(newGoal);
 
-        // If this is the very first goal, make it active
+        // If this is the very first goal being added, make it the active one
         if (!chama.groupPurchase.currentGoalId) {
             const addedGoal = chama.groupPurchase.purchaseGoals[chama.groupPurchase.purchaseGoals.length - 1];
             addedGoal.status = 'active';
@@ -87,41 +97,40 @@ export async function PUT(request, { params }) {
         }
 
         const chama = await Chama.findById(chamaId);
-        const currentGoalId = chama.groupPurchase.currentGoalId;
+        const currentGoalId = chama.groupPurchase?.currentGoalId;
         if (!currentGoalId) {
             return NextResponse.json({ error: "No active goal to complete." }, { status: 400 });
         }
 
         const currentGoal = chama.groupPurchase.purchaseGoals.id(currentGoalId);
         if (chama.currentBalance < currentGoal.targetAmount) {
-            return NextResponse.json({ error: "Target amount for the current goal has not been reached." }, { status: 400 });
+            return NextResponse.json({ error: "Target amount has not been reached." }, { status: 400 });
         }
         
-        // Mark current goal as complete
         currentGoal.status = 'completed';
 
-        // Find the next goal in the queue
+        // Find the next goal in the queue that is not yet completed
         const nextGoal = chama.groupPurchase.purchaseGoals
             .filter(g => g.status === 'queued')
             .sort((a, b) => a.purchaseOrder - b.purchaseOrder)[0];
 
-        // Update the current goal ID
+        // Update the current goal ID to the next one, or null if queue is empty
         chama.groupPurchase.currentGoalId = nextGoal ? nextGoal._id : null;
         if (nextGoal) {
             nextGoal.status = 'active';
         }
 
-        // Create a historical record
+        // Create a historical record for this completed purchase
         await ChamaCycle.create({
             chamaId,
             cycleType: 'purchase_cycle',
             beneficiaryId: currentGoal.beneficiaryId,
             actualAmount: currentGoal.targetAmount,
-            startDate: chama.createdAt, // Placeholder, can be improved
+            startDate: chama.createdAt, // This can be improved to track goal start date
             endDate: new Date()
         });
 
-        // Deduct the cost from the balance
+        // Deduct the cost from the chama's balance
         chama.currentBalance -= currentGoal.targetAmount;
         
         await chama.save();
@@ -131,3 +140,4 @@ export async function PUT(request, { params }) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
