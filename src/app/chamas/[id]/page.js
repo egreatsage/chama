@@ -15,6 +15,7 @@ import EqualSharingTab from '@/components/chama/EqualSharingTab';
 import ContributionsTab from '@/components/chama/ContributionsTab';
 import EditChamaModal from '@/components/chama/EditChamaModal';
 import RulesTab from '@/components/chama/RulesTab';
+import GroupPurchaseTab from '@/components/chama/GroupPurchaseTab';
 
 export default function ChamaDetailPage() {
   const [chama, setChama] = useState(null);
@@ -80,15 +81,23 @@ export default function ChamaDetailPage() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+
       case 'members':
         return <MembersList members={members} chama={chama} onActionComplete={fetchData} />;
+
       case 'contributions':
         return <ContributionsTab chama={chama} members={members} userRole={chama.userRole} currentUserId={currentUser?.id} />;
+
       case 'rotation':
         if (chama.operationType === 'rotation_payout') {
           return <RotationTab chama={chama} members={members} userRole={chama.userRole} onRotationUpdate={fetchData} />;
         }
-        return null;
+
+      case 'group_purchase': 
+        if (chama.operationType === 'group_purchase') {
+        return <GroupPurchaseTab chama={chama} members={members} userRole={chama.userRole} onUpdate={fetchData} />;
+        }
+
       case 'rules':
           return <RulesTab chama={chama} userRole={chama.userRole} />;
       case 'details':
@@ -126,6 +135,11 @@ export default function ChamaDetailPage() {
                     {chama.operationType === 'rotation_payout' && (
                         <TabButton isActive={activeTab === 'rotation'} onClick={() => setActiveTab('rotation')}>
                         Rotation
+                        </TabButton>
+                    )}
+                    {chama.operationType === 'group_purchase' && (
+                        <TabButton isActive={activeTab === 'group_purchase'} onClick={() => setActiveTab('group_purchase')}>
+                        Group Purchase
                         </TabButton>
                     )}
                     {/* --- FIX: The tab is now visible to all members --- */}
