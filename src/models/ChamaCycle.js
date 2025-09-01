@@ -8,7 +8,8 @@ const PayoutSchema = new Schema({
 
 const ChamaCycleSchema = new Schema({
   chamaId: { type: Schema.Types.ObjectId, ref: 'Chama', required: true, index: true },
-  cycleType: { type: String, enum: ['equal_sharing', 'rotation_cycle'], required: true },
+  // FIX: Added 'purchase_cycle' to the list of allowed values
+  cycleType: { type: String, enum: ['equal_sharing', 'rotation_cycle', 'purchase_cycle'], required: true },
   
   // Fields for Equal Sharing (optional)
   targetAmount: { type: Number },
@@ -16,9 +17,10 @@ const ChamaCycleSchema = new Schema({
   payouts: [PayoutSchema],
   distributedBy: { type: Schema.Types.ObjectId, ref: 'User' },
 
-  // Fields for Rotation Payout (optional)
+  // Fields for Rotation Payout & Group Purchase (optional)
   cycleNumber: { type: Number },
-  recipientId: { type: Schema.Types.ObjectId, ref: 'User' },
+  recipientId: { type: Schema.Types.ObjectId, ref: 'User' }, // For Rotation
+  beneficiaryId: { type: Schema.Types.ObjectId, ref: 'User' }, // For Purchase
   expectedAmount: { type: Number },
   actualAmount: { type: Number },
   

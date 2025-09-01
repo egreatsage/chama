@@ -83,7 +83,7 @@ export async function POST(request, { params }) {
     }
 }
 
-// PUT: Mark the current goal as complete and advance to the next one
+// PUT: Mark the current goal as complete and advance
 export async function PUT(request, { params }) {
     await connectDB();
     try {
@@ -109,18 +109,18 @@ export async function PUT(request, { params }) {
         
         currentGoal.status = 'completed';
 
-        // Find the next goal in the queue that is not yet completed
+        // Find the next goal in the queue
         const nextGoal = chama.groupPurchase.purchaseGoals
             .filter(g => g.status === 'queued')
             .sort((a, b) => a.purchaseOrder - b.purchaseOrder)[0];
 
-        // Update the current goal ID to the next one, or null if queue is empty
+        // Update the current goal ID
         chama.groupPurchase.currentGoalId = nextGoal ? nextGoal._id : null;
         if (nextGoal) {
             nextGoal.status = 'active';
         }
 
-        // Create a historical record for this completed purchase
+        // Create a historical record
         await ChamaCycle.create({
             chamaId,
             cycleType: 'purchase_cycle',
@@ -130,7 +130,7 @@ export async function PUT(request, { params }) {
             endDate: new Date()
         });
 
-        // Deduct the cost from the chama's balance
+        // Deduct the cost from the balance
         chama.currentBalance -= currentGoal.targetAmount;
         
         await chama.save();
