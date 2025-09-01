@@ -25,7 +25,7 @@ export async function GET(request, { params }) {
         const members = await ChamaMember.find({ chamaId: id })
             .populate({
                 path: 'userId',
-                select: 'firstName lastName email photoUrl',
+                select: 'firstName lastName phoneNumber email photoUrl',
                 model: User
             });
 
