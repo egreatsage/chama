@@ -40,7 +40,7 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
                     const historyData = await historyRes.json();
                     // Filter for only rotation cycles
                     console.log('this isthe data',historyData);
-                    setPayoutHistory(historyData.cycles?.filter(c => c.type === 'rotation_cycle'));
+                    setPayoutHistory(historyData.cycles?.filter(c => c.cycleType === 'rotation_cycle'));
                 } else {
                     toast.error("Could not load payout history.");
                 }
