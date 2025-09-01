@@ -182,33 +182,32 @@ export async function sendManualContributionEmail({ to, memberName, chamaName, a
   };
   await transporter.sendMail(mailOptions);
 }
-const createPayoutNotificationHtml = ({ memberName, chamaName, totalDistributed, shareAmount, cycleEndDate }) => `
+const createRotationPayoutHtml = ({ memberName, chamaName, amount, rotationNumber, totalMembers }) => `
   <!DOCTYPE html>
   <html>
   <body>
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-      <h2 style="color: #28a745;">Funds Distributed!</h2>
+      <h2 style="color: #0056b3;">Congratulations, It's Your Turn!</h2>
       <p>Hello ${memberName},</p>
-      <p>Great news! The savings cycle for the <strong>${chamaName}</strong> chama has been completed and the funds have been distributed.</p>
-      <div style="background-color: #e9f5ec; padding: 15px; border-radius: 5px;">
-        <p><strong>Total Amount Distributed:</strong> KES ${totalDistributed.toLocaleString()}</p>
-        <p><strong>Your Share:</strong> KES ${shareAmount.toLocaleString()}</p>
-        <p><strong>Cycle End Date:</strong> ${new Date(cycleEndDate).toLocaleDateString()}</p>
+      <p>This is to confirm that you have received the payout for the current rotation cycle in the <strong>${chamaName}</strong> chama.</p>
+      <div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px;">
+        <p><strong>Payout Amount:</strong> KES ${amount.toLocaleString()}</p>
+        <p><strong>Your Position in Rotation:</strong> ${rotationNumber} of ${totalMembers}</p>
       </div>
-      <p>This payout is now recorded in your chama's history. A new savings cycle can now begin!</p>
-      <p>Congratulations on achieving your savings goal,<br/>The ChamaApp Team</p>
+      <p>The funds have been allocated, and the rotation will now advance to the next member in the upcoming period.</p>
+      <p>Thank you for your consistent contributions,<br/>The ChamaApp Team</p>
     </div>
   </body>
   </html>
 `;
-export async function sendPayoutNotificationEmail({ to, memberName, chamaName, totalDistributed, shareAmount, cycleEndDate }) {
-    const mailOptions = {
-        from: `"ChamaApp Notifications" <${process.env.EMAIL_USER}>`,
-        to,
-        subject: `Your Payout from ${chamaName} has been distributed!`,
-        html: createPayoutNotificationHtml({ memberName, chamaName, totalDistributed, shareAmount, cycleEndDate }),
-    };
-    await transporter.sendMail(mailOptions);
+export async function sendRotationPayoutEmail({ to, memberName, chamaName, amount, rotationNumber, totalMembers }) {
+  const mailOptions = {
+    from: `"ChamaApp Notifications" <${process.env.EMAIL_USER}>`,
+    to,
+    subject: `You have received your payout from ${chamaName}!`,
+    html: createRotationPayoutHtml({ memberName, chamaName, amount, rotationNumber, totalMembers }),
+  };
+  await transporter.sendMail(mailOptions);
 }
 
 /**
