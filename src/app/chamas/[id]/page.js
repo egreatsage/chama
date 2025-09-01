@@ -3,11 +3,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import useAuthStore from '@/store/authStore';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import toast, { Toaster } from 'react-hot-toast';
-import useAuthStore from '@/store/authStore';
 
-// Import all modular components
+// Import all components
 import ChamaDetailHeader from '@/components/chama/ChamaDetailHeader';
 import MembersList from '@/components/chama/MembersList';
 import RotationTab from '@/components/chama/RotationTab';
@@ -16,7 +16,6 @@ import ContributionsTab from '@/components/chama/ContributionsTab';
 import EditChamaModal from '@/components/chama/EditChamaModal';
 import RulesTab from '@/components/chama/RulesTab';
 
-// Main Page Component
 export default function ChamaDetailPage() {
   const [chama, setChama] = useState(null);
   const [members, setMembers] = useState([]);
@@ -24,15 +23,12 @@ export default function ChamaDetailPage() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const { user } = useAuthStore(); // Get the currently logged-in user
-
+  const { user: currentUser } = useAuthStore();
   const params = useParams();
-  const { id } =  params;
+  const { id } = params;
 
-  // --- Data Fetching ---
   const fetchData = async () => {
     if (!id) return;
-    setIsLoading(true);
     setError(null);
     try {
       const [chamaRes, membersRes] = await Promise.all([
@@ -40,20 +36,14 @@ export default function ChamaDetailPage() {
         fetch(`/api/chamas/${id}/members`),
       ]);
 
-      if (!chamaRes.ok) {
-        const data = await chamaRes.json();
-        throw new Error(data.error || 'Failed to load Chama details');
-      }
+      if (!chamaRes.ok) throw new Error('Failed to load Chama details');
       const chamaData = await chamaRes.json();
       setChama(chamaData.chama);
-      console.log('Fetched Chama:', chamaData.chama);
 
-      if (!membersRes.ok) {
-        const data = await membersRes.json();
-        throw new Error(data.error || 'Failed to load members');
-      }
+      if (!membersRes.ok) throw new Error('Failed to load members');
       const membersData = await membersRes.json();
       setMembers(membersData.members);
+
     } catch (err) {
       setError(err.message);
       toast.error(err.message);
@@ -63,15 +53,15 @@ export default function ChamaDetailPage() {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     fetchData();
   }, [id]);
-
-    const handleUpdateChama = (updatedChamaData) => {
+  
+  const handleUpdateChama = (updatedChamaData) => {
     setChama(updatedChamaData);
-    fetchData(); 
+    fetchData();
   };
 
-  // --- Render Logic ---
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -88,36 +78,18 @@ export default function ChamaDetailPage() {
     return <div className="text-center p-10">Chama not found.</div>;
   }
 
-  // --- Tab Content Renderer ---
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'contributions':
-        return (
-          <ContributionsTab
-            chama={chama}
-            members={members}
-            userRole={chama.userRole}
-            currentUserId={user?.id}
-          />
-        );
       case 'members':
-        return (
-          <MembersList
-            members={members}
-            chama={chama}
-            onActionComplete={fetchData}
-          />
-        );
+        return <MembersList members={members} chama={chama} onActionComplete={fetchData} />;
+      case 'contributions':
+        return <ContributionsTab chama={chama} members={members} userRole={chama.userRole} currentUserId={currentUser?.id} />;
       case 'rotation':
-        return chama.operationType === 'rotation_payout' ? (
-          <RotationTab
-            chama={chama}
-            members={members}
-            userRole={chama.userRole}
-            onRotationUpdate={fetchData}
-          />
-        ) : null;
-        case 'rules':
+        if (chama.operationType === 'rotation_payout') {
+          return <RotationTab chama={chama} members={members} userRole={chama.userRole} onRotationUpdate={fetchData} />;
+        }
+        return null;
+      case 'rules':
           return <RulesTab chama={chama} userRole={chama.userRole} />;
       case 'details':
       default:
@@ -126,10 +98,8 @@ export default function ChamaDetailPage() {
         }
         return (
           <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-semibold">Overview</h2>
-            <p className="text-gray-600 mt-2">
-              A general overview for this chama type will be displayed here.
-            </p>
+            <h2 className="text-xl font-semibold">Details</h2>
+            <p className="text-gray-600 mt-2">General information about this chama.</p>
           </div>
         );
     }
@@ -139,48 +109,35 @@ export default function ChamaDetailPage() {
     <ProtectedRoute>
       <Toaster position="top-right" />
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <ChamaDetailHeader chama={chama} setChama={setChama} onEditClick={() => setIsEditModalOpen(true)} />
+        <ChamaDetailHeader chama={chama} onEditClick={() => setIsEditModalOpen(true)} />
 
         <div className="mt-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-              <TabButton
-                isActive={activeTab === 'details'}
-                onClick={() => setActiveTab('details')}
-              >
-                {chama.operationType === 'equal_sharing' ? 'Savings Goal' : 'Details'}
-              </TabButton>
-              <TabButton
-                isActive={activeTab === 'contributions'}
-                onClick={() => setActiveTab('contributions')}
-              >
-                Contributions
-              </TabButton>
-              <TabButton
-                isActive={activeTab === 'members'}
-                onClick={() => setActiveTab('members')}
-              >
-                Members ({members.length})
-              </TabButton>
-              {chama.operationType === 'rotation_payout' && (
-                <TabButton
-                  isActive={activeTab === 'rotation'}
-                  onClick={() => setActiveTab('rotation')}
-                >
-                  Rotation
-                </TabButton>
-              )}
-              {chama.userRole === 'chairperson' && (
-                        <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')}>
-                            Rules & Settings
+            <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                    <TabButton isActive={activeTab === 'details'} onClick={() => setActiveTab('details')}>
+                        {chama.operationType === 'equal_sharing' ? 'Savings Goal' : 'Details'}
+                    </TabButton>
+                    <TabButton isActive={activeTab === 'members'} onClick={() => setActiveTab('members')}>
+                        Members ({members.length})
+                    </TabButton>
+                    <TabButton isActive={activeTab === 'contributions'} onClick={() => setActiveTab('contributions')}>
+                        Contributions
+                    </TabButton>
+                    {chama.operationType === 'rotation_payout' && (
+                        <TabButton isActive={activeTab === 'rotation'} onClick={() => setActiveTab('rotation')}>
+                        Rotation
                         </TabButton>
                     )}
-            </nav>
-          </div>
-
+                    {/* --- FIX: The tab is now visible to all members --- */}
+                    <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')}>
+                        Rules & Settings
+                    </TabButton>
+                </nav>
+            </div>
           <div className="py-6">{renderTabContent()}</div>
         </div>
       </div>
+
       <EditChamaModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -191,7 +148,6 @@ export default function ChamaDetailPage() {
   );
 }
 
-// A small helper component to keep the tab navigation clean
 function TabButton({ isActive, onClick, children }) {
   return (
     <button

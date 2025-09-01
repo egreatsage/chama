@@ -10,10 +10,15 @@ export async function GET(request, { params }) {
   await connectDB();
   try {
     const user = await getServerSideUser();
-    const { id: chamaId } = params;
+    const { id: chamaId } = await params; // Fixed: Added await for params
 
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Validate chamaId format
+    if (!chamaId || typeof chamaId !== 'string') {
+      return NextResponse.json({ error: "Invalid chama ID" }, { status: 400 });
     }
 
     // Authorization: User must be a member to view rules
@@ -25,7 +30,19 @@ export async function GET(request, { params }) {
     // Find rules, or create a default set if none exist
     let rules = await ChamaRules.findOne({ chamaId });
     if (!rules) {
-      rules = await ChamaRules.create({ chamaId });
+      // Create default rules with proper structure
+      rules = await ChamaRules.create({ 
+        chamaId,
+        latePenalty: {
+          enabled: false,
+          amount: 0,
+          gracePeriodDays: 0
+        },
+        meetingAttendance: {
+          required: false,
+          penaltyAmount: 0
+        }
+      });
     }
 
     return NextResponse.json({ rules });
@@ -41,11 +58,21 @@ export async function PUT(request, { params }) {
   await connectDB();
   try {
     const user = await getServerSideUser();
-    const { id: chamaId } = params;
+    const { id: chamaId } = await params; // Fixed: Added await for params consistency
     const body = await request.json();
 
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Validate chamaId format
+    if (!chamaId || typeof chamaId !== 'string') {
+      return NextResponse.json({ error: "Invalid chama ID" }, { status: 400 });
+    }
+
+    // Validate request body
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
     // Authorization: Only chairperson can update rules
@@ -54,16 +81,67 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: "Only the chairperson can update rules." }, { status: 403 });
     }
 
+    // Sanitize and validate the input data
+    const sanitizedRules = {
+      chamaId, // Ensure chamaId is always set
+      latePenalty: {
+        enabled: Boolean(body.latePenalty?.enabled),
+        amount: Math.max(0, Number(body.latePenalty?.amount) || 0),
+        gracePeriodDays: Math.max(0, Number(body.latePenalty?.gracePeriodDays) || 0)
+      },
+      meetingAttendance: {
+        required: Boolean(body.meetingAttendance?.required),
+        penaltyAmount: Math.max(0, Number(body.meetingAttendance?.penaltyAmount) || 0)
+      },
+      customRules: Array.isArray(body.customRules) ? body.customRules.filter(rule => typeof rule === 'string' && rule.trim()) : []
+    };
+
+    // Additional validation
+    if (sanitizedRules.latePenalty.amount > 10000) {
+      return NextResponse.json({ error: "Late penalty amount cannot exceed KES 10,000" }, { status: 400 });
+    }
+
+    if (sanitizedRules.latePenalty.gracePeriodDays > 30) {
+      return NextResponse.json({ error: "Grace period cannot exceed 30 days" }, { status: 400 });
+    }
+
+    if (sanitizedRules.meetingAttendance.penaltyAmount > 5000) {
+      return NextResponse.json({ error: "Meeting penalty amount cannot exceed KES 5,000" }, { status: 400 });
+    }
+
     const updatedRules = await ChamaRules.findOneAndUpdate(
       { chamaId },
-      { $set: body },
-      { new: true, upsert: true, runValidators: true } // upsert: true creates if it doesn't exist
+      { $set: sanitizedRules },
+      { 
+        new: true, 
+        upsert: true, 
+        runValidators: true,
+        setDefaultsOnInsert: true // Ensure defaults are set when creating new document
+      }
     );
 
-    return NextResponse.json({ message: "Rules updated successfully.", rules: updatedRules });
+    return NextResponse.json({ 
+      message: "Rules updated successfully.", 
+      rules: updatedRules 
+    });
 
   } catch (error) {
     console.error("Failed to update chama rules:", error);
+    
+    // Handle specific mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return NextResponse.json({ 
+        error: "Validation failed", 
+        details: validationErrors 
+      }, { status: 400 });
+    }
+
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      return NextResponse.json({ error: "Rules already exist for this chama" }, { status: 409 });
+    }
+
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
