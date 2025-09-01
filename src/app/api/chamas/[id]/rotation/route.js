@@ -9,52 +9,88 @@ import ChamaCycle from "@/models/ChamaCycle";
 import User from "@/models/User";
 import { sendRotationPayoutEmail } from '@/lib/email';
 
+// Helper function to get the start and end of the current contribution period
 const getCurrentPeriod = (frequency) => {
     const now = new Date();
     let start, end;
-    
+
     switch (frequency) {
         case 'weekly':
-            const startOfWeek = new Date(now);
-            startOfWeek.setDate(now.getDate() - now.getDay());
-            startOfWeek.setHours(0, 0, 0, 0);
-            
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            endOfWeek.setHours(23, 59, 59, 999);
-            
-            start = startOfWeek;
-            end = endOfWeek;
+            const firstDayOfWeek = now.getDate() - now.getDay();
+            start = new Date(now.setDate(firstDayOfWeek));
+            start.setHours(0, 0, 0, 0);
+            end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
             break;
-            
+        case 'quarterly':
+            const quarter = Math.floor(now.getMonth() / 3);
+            start = new Date(now.getFullYear(), quarter * 3, 1);
+            end = new Date(start.getFullYear(), start.getMonth() + 3, 0);
+            end.setHours(23, 59, 59, 999);
+            break;
         case 'monthly':
-            start = new Date(now.getFullYear(), now.getMonth(), 1);
-            end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-            break;
-            
         default:
-            // Fallback to current month
             start = new Date(now.getFullYear(), now.getMonth(), 1);
-            end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            end.setHours(23, 59, 59, 999);
+            break;
     }
-    
     return { start, end };
 };
-const periodResult = getCurrentPeriod(chama.contributionFrequency);
-if (!periodResult) {
-    return NextResponse.json({ error: "Unable to determine current contribution period." }, { status: 500 });
-}
-const { start, end } = periodResult;
 
-// PUT: Handles setting or updating the rotation order (remains unchanged)
-export async function PUT(request, { params }) { /* ... existing code ... */ }
+// PUT: Handles setting or updating the rotation order
+export async function PUT(request, { params }) {
+    // ... (This function remains unchanged and correct)
+    await connectDB();
+    try {
+        const user = await getServerSideUser();
+        const { id: chamaId } = params;
+        const { rotationOrder, randomize } = await request.json();
+
+        if (!user || !(await isChairperson(user.id, chamaId))) {
+            return NextResponse.json({ error: "Unauthorized: Only the chairperson can set the rotation order." }, { status: 403 });
+        }
+
+        if (!Array.isArray(rotationOrder)) {
+            return NextResponse.json({ error: "Invalid rotation order provided." }, { status: 400 });
+        }
+        
+        let finalOrder = rotationOrder;
+        if (randomize) {
+            for (let i = finalOrder.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [finalOrder[i], finalOrder[j]] = [finalOrder[j], finalOrder[i]];
+            }
+        }
+
+        const updatedChama = await Chama.findByIdAndUpdate(
+            chamaId,
+            { 
+                'rotationPayout.rotationOrder': finalOrder,
+                'rotationPayout.currentRecipientIndex': 0
+            },
+            { new: true }
+        );
+
+        if (!updatedChama) {
+            return NextResponse.json({ error: "Chama not found." }, { status: 404 });
+        }
+
+        return NextResponse.json({ message: "Rotation order updated successfully.", chama: updatedChama });
+
+    } catch (error) {
+        console.error("Failed to update rotation order:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
 
 // POST: Executes the payout and advances the rotation
 export async function POST(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId } = await params;
+        const { id: chamaId } = params;
 
         if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
@@ -67,13 +103,16 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Only the chairperson can execute a payout." }, { status: 403 });
         }
         
-        // 2. Contribution Check: Verify all members have paid for the current period
+        // --- FIX: Moved this logic inside the POST function ---
         const { start, end } = getCurrentPeriod(chama.contributionFrequency);
+        // --- END FIX ---
+
+        // 2. Contribution Check
         const activeMembers = await ChamaMember.find({ chamaId, status: 'active' });
         const contributionsInPeriod = await Contribution.find({ chamaId, status: 'confirmed', createdAt: { $gte: start, $lte: end } });
         
         if (contributionsInPeriod.length < activeMembers.length) {
-            return NextResponse.json({ error: "Cannot proceed. Not all members have made their contribution for this period." }, { status: 400 });
+            return NextResponse.json({ error: "Cannot proceed. Not all members have contributed for this period." }, { status: 400 });
         }
 
         // 3. Payout Logic
@@ -98,10 +137,7 @@ export async function POST(request, { params }) {
         // 5. Advance the Rotation
         const nextIndex = (currentRecipientIndex + 1) % rotationOrder.length;
         chama.rotationPayout.currentRecipientIndex = nextIndex;
-        
-        // Reset chama's current balance after payout
-        chama.currentBalance = 0; // Or deduct totalPot from it
-        
+        chama.currentBalance = 0;
         await chama.save();
         
         // 6. Send Email Notification
@@ -123,3 +159,4 @@ export async function POST(request, { params }) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
