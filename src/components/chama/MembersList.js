@@ -1,13 +1,17 @@
-// File Path: src/components/chama/MembersList.js
+// src/components/chama/MembersList.js
+
 'use client';
 
 import { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
-import { 
-    MagnifyingGlassIcon, 
-    UserPlusIcon, 
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import {
+    MagnifyingGlassIcon,
+    UserPlusIcon,
     XMarkIcon,
-    UsersIcon 
+    UsersIcon,
+    DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline';
 
 export default function MembersList({ members, chama, onActionComplete }) {
@@ -16,18 +20,17 @@ export default function MembersList({ members, chama, onActionComplete }) {
     const [isInviting, setIsInviting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Filter members based on search query
     const filteredMembers = useMemo(() => {
         if (!searchQuery.trim()) return members;
-        
+
         const query = searchQuery.toLowerCase().trim();
         return members.filter(member => {
             const fullName = `${member.userId?.firstName || ''} ${member.userId?.lastName || ''}`.toLowerCase();
             const email = member.userId?.email?.toLowerCase() || '';
             const role = member.role?.toLowerCase() || '';
-            
-            return fullName.includes(query) || 
-                   email.includes(query) || 
+
+            return fullName.includes(query) ||
+                   email.includes(query) ||
                    role.includes(query);
         });
     }, [members, searchQuery]);
@@ -47,7 +50,7 @@ export default function MembersList({ members, chama, onActionComplete }) {
             toast.success(data.message, { id: toastId });
             setShowInviteModal(false);
             setInviteEmail('');
-            onActionComplete(); // Refresh the member list in the parent component
+            onActionComplete();
         } catch (err) {
             toast.error(err.message, { id: toastId });
         } finally {
@@ -77,7 +80,28 @@ export default function MembersList({ members, chama, onActionComplete }) {
     const clearSearch = () => {
         setSearchQuery('');
     };
-    
+
+    const generatePdf = () => {
+        const doc = new jsPDF();
+        const tableColumn = ["First Name", "Last Name", "Phone Number", "Role", "Email"];
+        const tableRows = [];
+
+        filteredMembers.forEach(member => {
+            const memberData = [
+                member.userId.firstName,
+                member.userId.lastName,
+                member.userId.phoneNumber,
+                member.role,
+                member.userId.email,
+            ];
+            tableRows.push(memberData);
+        });
+
+        doc.autoTable(tableColumn, tableRows, { startY: 20 });
+        doc.text(`Members of ${chama.name}`, 14, 15);
+        doc.save(`${chama.name}_members.pdf`);
+    }
+
     return (
         <div className="bg-white shadow-sm rounded-lg border border-gray-200">
             {/* Header */}
@@ -94,12 +118,19 @@ export default function MembersList({ members, chama, onActionComplete }) {
                             )}
                         </p>
                     </div>
-                    
+
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
+                        <button
+                            onClick={generatePdf}
+                            className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                        >
+                            <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+                            Download PDF
+                        </button>
                         {chama.userRole === 'chairperson' && (
-                            <button 
-                                onClick={() => setShowInviteModal(true)} 
+                            <button
+                                onClick={() => setShowInviteModal(true)}
                                 className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                             >
                                 <UserPlusIcon className="h-4 w-4 mr-2" />
@@ -146,9 +177,9 @@ export default function MembersList({ members, chama, onActionComplete }) {
                                 {/* Member Info */}
                                 <div className="flex items-center min-w-0 flex-1">
                                     <div className="flex-shrink-0">
-                                        <img 
-                                            className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover" 
-                                            src={member.userId?.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.userId?.firstName || '')}+${encodeURIComponent(member.userId?.lastName || '')}&background=random`} 
+                                        <img
+                                            className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
+                                            src={member.userId?.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.userId?.firstName || '')}+${encodeURIComponent(member.userId?.lastName || '')}&background=random`}
                                             alt={`${member.userId?.firstName} ${member.userId?.lastName}`}
                                             onError={(e) => {
                                                 e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.userId?.firstName || '')}+${encodeURIComponent(member.userId?.lastName || '')}&background=random`;
@@ -171,7 +202,7 @@ export default function MembersList({ members, chama, onActionComplete }) {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 {/* Role and Actions */}
                                 <div className="flex items-center space-x-2 sm:space-x-4 ml-4">
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
@@ -179,8 +210,8 @@ export default function MembersList({ members, chama, onActionComplete }) {
                                             {member.role}
                                         </span>
                                         {chama.userRole === 'chairperson' && member.role !== 'chairperson' && (
-                                            <button 
-                                                onClick={() => handleRemove(member._id)} 
+                                            <button
+                                                onClick={() => handleRemove(member._id)}
                                                 className="text-red-600 hover:text-red-800 text-xs sm:text-sm font-medium transition-colors mt-1 sm:mt-0"
                                             >
                                                 Remove
@@ -244,34 +275,34 @@ export default function MembersList({ members, chama, onActionComplete }) {
                                     <XMarkIcon className="h-6 w-6" />
                                 </button>
                             </div>
-                            
+
                             <form onSubmit={handleInvite} className="space-y-4">
                                 <div>
                                     <label htmlFor="invite-email" className="block text-sm font-medium text-gray-700 mb-1">
                                         Email Address
                                     </label>
-                                    <input 
+                                    <input
                                         id="invite-email"
-                                        type="email" 
-                                        value={inviteEmail} 
-                                        onChange={(e) => setInviteEmail(e.target.value)} 
-                                        placeholder="member@example.com" 
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
-                                        required 
+                                        type="email"
+                                        value={inviteEmail}
+                                        onChange={(e) => setInviteEmail(e.target.value)}
+                                        placeholder="member@example.com"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        required
                                     />
                                 </div>
-                                
+
                                 <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 space-y-2 space-y-reverse sm:space-y-0 pt-4">
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setShowInviteModal(false)} 
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowInviteModal(false)}
                                         className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                                     >
                                         Cancel
                                     </button>
-                                    <button 
-                                        type="submit" 
-                                        disabled={isInviting} 
+                                    <button
+                                        type="submit"
+                                        disabled={isInviting}
                                         className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
                                         {isInviting ? 'Sending...' : 'Send Invite'}
