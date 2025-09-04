@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { TrendingUp, Calendar, Target, CheckCircle, Users, Clock } from 'lucide-react';
+import { TrendingUp, Calendar, Target, CheckCircle, Users, Clock, FileDown } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 // A helper function to format currency
 const formatCurrency = (amount) => {
@@ -67,6 +68,53 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
         setIsDistributing(false);
     }
   };
+
+  const generateHistoryExcel = () => {
+    if (!cycles || cycles.length === 0) {
+        toast.error("No payout history to export.");
+        return;
+    }
+
+    const excelData = [];
+    cycles.forEach((cycle, index) => {
+        // Add a summary row for the cycle
+        excelData.push({
+            'Type': `Cycle #${cycles.length - index} Summary`,
+            'Date': new Date(cycle.endDate).toLocaleDateString(),
+            'Recipient/Item': 'N/A',
+            'Amount': cycle.totalCollected,
+        });
+
+        // Add detailed rows for each payout in the cycle
+        cycle.payouts.forEach(payout => {
+            excelData.push({
+                'Type': 'Payout',
+                'Date': new Date(cycle.endDate).toLocaleDateString(),
+                'Recipient/Item': `${payout.userId.firstName} ${payout.userId.lastName}`,
+                'Amount': payout.amount,
+            });
+        });
+
+        // Add a separator row
+        excelData.push({});
+    });
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    worksheet['!cols'] = [
+        { wch: 25 }, // Type
+        { wch: 15 }, // Date
+        { wch: 25 }, // Recipient/Item
+        { wch: 15 }, // Amount
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Payout History');
+
+    const currentDate = new Date().toISOString().split('T')[0];
+    const filename = `${chama.name}_equal_sharing_history_${currentDate}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 p-4 sm:p-6 lg:p-8">
@@ -194,7 +242,13 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
         <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-6 sm:p-8 border border-white/20">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Payout History</h2>
-            <Clock className="h-8 w-8 text-gray-600" />
+            <button
+                onClick={generateHistoryExcel}
+                className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            >
+                <FileDown className="h-4 w-4 mr-2" />
+                Export History
+            </button>
           </div>
 
           {isLoadingHistory ? (

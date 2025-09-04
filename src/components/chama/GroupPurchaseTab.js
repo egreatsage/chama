@@ -3,7 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { ShoppingBag, Plus, Check, History } from 'lucide-react';
+import { ShoppingBag, Plus, Check, History, FileDown } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount || 0);
 
@@ -62,6 +63,37 @@ export default function GroupPurchaseTab({ chama, members, userRole, onUpdate })
       }
   };
 
+  const generateHistoryExcel = () => {
+    if (!history || history.length === 0) {
+        toast.error("No purchase history to export.");
+        return;
+    }
+
+    const excelData = history.map(cycle => ({
+        'Beneficiary': `${cycle.beneficiaryId?.firstName || 'N/A'} ${cycle.beneficiaryId?.lastName || ''}`,
+        'Item': cycle.itemDescription,
+        'Date': new Date(cycle.endDate).toLocaleDateString(),
+        'Amount': cycle.actualAmount,
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    worksheet['!cols'] = [
+        { wch: 25 }, // Beneficiary
+        { wch: 30 }, // Item
+        { wch: 15 }, // Date
+        { wch: 15 }, // Amount
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Purchase History');
+
+    const currentDate = new Date().toISOString().split('T')[0];
+    const filename = `${chama.name}_purchase_history_${currentDate}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+};
+
+
   const activeGoal = goals.find(g => g._id === currentGoalId);
   const queuedGoals = goals.filter(g => g.status === 'queued');
 
@@ -97,16 +129,16 @@ export default function GroupPurchaseTab({ chama, members, userRole, onUpdate })
       </div>
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold">Purchase Queue</h3>
+            <h3 className="text-xl font-bold text-gray-800">Purchase Queue</h3>
             {userRole === 'chairperson' && (
                 <button onClick={() => setIsModalOpen(true)} className="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center"><Plus className="w-5 h-5 mr-2"/> Add Goal</button>
             )}
         </div>
-        <ul className="space-y-3">
+        <ul className="space-y-3 text-gray-700">
             {queuedGoals.length > 0 ? queuedGoals.map((goal, index) => (
-                <li key={goal._id} className="p-3 bg-gray-50 rounded-md border flex justify-between items-center">
+                <li key={goal._id} className="p-3 bg-gray-50 rounded-md border-none flex justify-between items-center">
                     <div>
-                        <span className="font-semibold">{index + 1}. {goal.itemDescription}</span>
+                        <span className="font-semibold mx-2">{index + 1}. {goal.itemDescription}</span>
                         <span className="text-sm text-gray-600"> for {goal.beneficiaryId.firstName}</span>
                     </div>
                     <span className="text-sm font-medium">{formatCurrency(goal.targetAmount)}</span>
@@ -117,10 +149,19 @@ export default function GroupPurchaseTab({ chama, members, userRole, onUpdate })
 
       {/* --- Purchase History Section --- */}
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
-          <History className="w-6 h-6 mr-3 text-indigo-600"/>
-          Completed Purchases
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            <History className="w-6 h-6 mr-3 text-indigo-600"/>
+            Completed Purchases
+          </h2>
+          <button
+              onClick={generateHistoryExcel}
+              className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+          >
+              <FileDown className="h-4 w-4 mr-2" />
+              Export History
+          </button>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-gray-50">
@@ -187,25 +228,25 @@ function AddGoalModal({ members, chamaId, onClose, onGoalAdded }) {
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-                <h3 className="text-lg font-medium mb-4">Add New Purchase Goal</h3>
+                <h3 className="text-lg text-gray-900 font-medium mb-4">Add New Purchase Goal</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium">Beneficiary</label>
-                        <select value={beneficiaryId} onChange={(e) => setBeneficiaryId(e.target.value)} className="w-full border p-2 rounded mt-1" required>
+                        <label className="block text-sm text-gray-700 font-medium">Beneficiary</label>
+                        <select value={beneficiaryId} onChange={(e) => setBeneficiaryId(e.target.value)} className="w-full border p-2 rounded text-gray-600 mt-1" required>
                             <option value="">Select a member</option>
                             {members.map(m => <option key={m.userId._id} value={m.userId._id}>{m.userId.firstName} {m.userId.lastName}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium">Item Description</label>
-                        <input type="text" value={itemDescription} onChange={(e) => setItemDescription(e.target.value)} className="w-full border p-2 rounded mt-1" placeholder="e.g., New Fridge" required />
+                        <label className="block text-sm text-gray-700 font-medium">Item Description</label>
+                        <input type="text" value={itemDescription} onChange={(e) => setItemDescription(e.target.value)} className="w-full border p-2 rounded text-gray-600 mt-1" placeholder="e.g., New Fridge" required />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium">Target Amount (KES)</label>
-                        <input type="number" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} className="w-full border p-2 rounded mt-1" placeholder="e.g., 50000" required />
+                        <label className="block text-sm text-gray-700 font-medium">Target Amount (KES)</label>
+                        <input type="number" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} className="w-full border p-2 rounded text-gray-600 mt-1" placeholder="e.g., 50000" required />
                     </div>
                     <div className="flex justify-end space-x-2 pt-2">
-                        <button type="button" onClick={onClose} className="bg-gray-200 px-4 py-2 rounded">Cancel</button>
+                        <button type="button" onClick={onClose} className="bg-gray-200 px-4 py-2 text-gray-900 rounded">Cancel</button>
                         <button type="submit" disabled={isSaving} className="bg-indigo-600 text-white px-4 py-2 rounded disabled:bg-gray-400">
                             {isSaving ? 'Adding...' : 'Add to Queue'}
                         </button>
@@ -215,4 +256,3 @@ function AddGoalModal({ members, chamaId, onClose, onGoalAdded }) {
         </div>
     );
 }
-

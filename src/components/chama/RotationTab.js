@@ -3,8 +3,9 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { ArrowRight, RefreshCw, UserCheck, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowRight, RefreshCw, UserCheck, CheckCircle, XCircle, History, FileDown } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import * as XLSX from 'xlsx';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount || 0);
 
@@ -103,6 +104,34 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
     const currentIndex = chama.rotationPayout?.currentRecipientIndex || 0;
     const currentRecipient = orderedMembers[currentIndex];
     const allMembersPaid = contributionStatus?.memberStatuses.every(m => m.status === 'Paid');
+
+    const generateHistoryExcel = () => {
+        if (!payoutHistory || payoutHistory.length === 0) {
+            toast.error("No payout history to export.");
+            return;
+        }
+    
+        const excelData = payoutHistory.map(cycle => ({
+            'Date': new Date(cycle.endDate).toLocaleDateString(),
+            'Recipient': `${memberMap.get(cycle.recipientId)?.firstName || 'Unknown'} ${memberMap.get(cycle.recipientId)?.lastName || 'Member'}`,
+            'Amount': cycle.actualAmount,
+        }));
+    
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+        worksheet['!cols'] = [
+            { wch: 15 }, // Date
+            { wch: 25 }, // Recipient
+            { wch: 15 }, // Amount
+        ];
+    
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Rotation History');
+    
+        const currentDate = new Date().toISOString().split('T')[0];
+        const filename = `${chama.name}_rotation_history_${currentDate}.xlsx`;
+        XLSX.writeFile(workbook, filename);
+    };
 
     return (
         <div className="bg-gradient-to-br from-white to-gray-50 shadow-xl rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200 hover:shadow-2xl transition-all duration-300 relative">
@@ -385,10 +414,19 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
 
                 {/* Payout History Section */}
                 <div className="mt-8 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 sm:p-6 border border-gray-200">
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Payout History
-                    </h3>
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <History className="w-5 h-5 mr-2 text-green-500" />
+                            Payout History
+                        </h3>
+                        <button
+                            onClick={generateHistoryExcel}
+                            className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                        >
+                            <FileDown className="h-4 w-4 mr-2" />
+                            Export History
+                        </button>
+                    </div>
                     
                     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
