@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import * as XLSX from 'xlsx';
 import { 
   CheckCircleIcon, 
   ExclamationCircleIcon, 
@@ -9,7 +10,8 @@ import {
   CurrencyDollarIcon,
   UsersIcon,
   CalendarIcon,
-  ArrowPathIcon 
+  ArrowPathIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/react/24/solid';
 
 const formatCurrency = (amount) => {
@@ -238,6 +240,50 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
     statusData.period.frequency.charAt(0).toUpperCase() + statusData.period.frequency.slice(1) : 
     '';
 
+    const generateExcel = () => {
+      if (!statusData || !statusData.memberStatuses) {
+          toast.error("No contribution data available to export.");
+          return;
+      }
+  
+      // Prepare data for Excel
+      const excelData = statusData.memberStatuses.map(member => ({
+          'First Name': member.memberInfo.firstName || '',
+          'Last Name': member.memberInfo.lastName || '',
+          'Amount Paid': member.paidAmount || 0,
+          'Expected Amount': member.expectedAmount || 0,
+          'Date': member.lastPayment ? new Date(member.lastPayment.date).toLocaleDateString() : 'N/A',
+          'Status': member.status || 'Unpaid',
+          'Last Payment Method': member.lastPayment ? member.lastPayment.method : 'N/A'
+      }));
+  
+      // Create workbook and worksheet
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+  
+      // Set column widths
+      const columnWidths = [
+          { wch: 15 }, // First Name
+          { wch: 15 }, // Last Name  
+          { wch: 15 }, // Amount Paid
+          { wch: 15 }, // Expected Amount
+          { wch: 15 }, // Date
+          { wch: 15 }, // Status
+          { wch: 20 }  // Last Payment Method
+      ];
+      worksheet['!cols'] = columnWidths;
+  
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Contributions');
+  
+      // Generate filename with current date
+      const currentDate = new Date().toISOString().split('T')[0];
+      const filename = `${chama.name}_contributions_${currentDate}.xlsx`;
+  
+      // Write and download file
+      XLSX.writeFile(workbook, filename);
+  };
+
   if (!chama) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -279,7 +325,8 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
           />
         </div>
       )}
-
+    
+    
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         {/* Forms Section */}
         <div className="xl:col-span-1 space-y-6">
@@ -299,7 +346,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                     placeholder="e.g., 1000"
                     min="1"
                     max="300000"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                    className="w-full px-3 py-2 border border-gray-300 text-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                     required 
                   />
                 </div>
@@ -312,7 +359,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                     value={mpesaPhone} 
                     onChange={(e) => setMpesaPhone(e.target.value)} 
                     placeholder="0712345678"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                    className="w-full px-3 py-2 border border-gray-300 text-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                     required 
                   />
                 </div>
@@ -340,7 +387,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                     <select 
                       value={selectedMember} 
                       onChange={(e) => setSelectedMember(e.target.value)} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      className="w-full text-gray-800 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                       required
                     >
                       <option value="">Choose a member...</option>
@@ -361,7 +408,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                       onChange={(e) => setManualAmount(e.target.value)} 
                       placeholder="e.g., 1000"
                       min="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      className="w-full px-3 py-2 border text-gray-800 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                       required 
                     />
                   </div>
@@ -402,6 +449,15 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                     )}
                   </p>
                 </div>
+
+               <div className='flex space-x-2'>
+                  <button
+        onClick={generateExcel}
+        className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+    >
+        <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+        Download Excel
+    </button>
                 <button
                   onClick={fetchContributionStatus}
                   disabled={isLoadingStatus}
@@ -410,6 +466,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                   <ArrowPathIcon  className={`h-4 w-4 mr-2 ${isLoadingStatus ? 'animate-spin' : ''}`} />
                   Refresh
                 </button>
+               </div>
               </div>
             </div>
 
