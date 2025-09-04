@@ -12,7 +12,7 @@ export async function GET(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId } = params;
+        const { id: chamaId } =await params;
         if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
@@ -125,6 +125,7 @@ export async function PUT(request, { params }) {
             chamaId,
             cycleType: 'purchase_cycle',
             beneficiaryId: currentGoal.beneficiaryId,
+            itemDescription: currentGoal.itemDescription,
             actualAmount: currentGoal.targetAmount,
             startDate: chama.createdAt, // This can be improved to track goal start date
             endDate: new Date()

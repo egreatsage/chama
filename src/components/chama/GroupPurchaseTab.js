@@ -3,24 +3,36 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { ShoppingBag, Plus, Check } from 'lucide-react';
+import { ShoppingBag, Plus, Check, History } from 'lucide-react';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount || 0);
 
 export default function GroupPurchaseTab({ chama, members, userRole, onUpdate }) {
   const [goals, setGoals] = useState([]);
   const [currentGoalId, setCurrentGoalId] = useState(null);
+  const [history, setHistory] = useState([]); // State for completed cycles
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchData = async () => {
+    setIsLoading(true);
     try {
-      const res = await fetch(`/api/chamas/${chama._id}/goals`);
-      if (!res.ok) throw new Error('Failed to load purchase goals');
-      const data = await res.json();
-      setGoals(data.goals);
-      setCurrentGoalId(data.currentGoalId);
+      const [goalsRes, historyRes] = await Promise.all([
+        fetch(`/api/chamas/${chama._id}/goals`),
+        fetch(`/api/chamas/${chama._id}/cycles`)
+      ]);
+      
+      if (!goalsRes.ok) throw new Error('Failed to load purchase goals');
+      const goalsData = await goalsRes.json();
+      setGoals(goalsData.goals);
+      setCurrentGoalId(goalsData.currentGoalId);
+
+      if (!historyRes.ok) throw new Error('Failed to load history');
+      const historyData = await historyRes.json();
+      // This filters the history to only show records relevant to this chama type
+      setHistory(historyData.cycles.filter(c => c.cycleType === 'purchase_cycle'));
+      console.log(historyData.cycles); 
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -29,9 +41,7 @@ export default function GroupPurchaseTab({ chama, members, userRole, onUpdate })
   };
 
   useEffect(() => {
-    if (chama._id) {
-        fetchData();
-    }
+    fetchData();
   }, [chama._id]);
 
   const handleCompleteGoal = async () => {
@@ -43,8 +53,8 @@ export default function GroupPurchaseTab({ chama, members, userRole, onUpdate })
           const data = await res.json();
           if (!res.ok) throw new Error(data.error);
           toast.success(data.message, { id: toastId });
-          onUpdate(); // Trigger a full refetch on the parent page
-          fetchData(); // Also refetch local data
+          onUpdate(); 
+          fetchData(); 
       } catch (error) {
           toast.error(error.message, { id: toastId });
       } finally {
@@ -54,11 +64,10 @@ export default function GroupPurchaseTab({ chama, members, userRole, onUpdate })
 
   const activeGoal = goals.find(g => g._id === currentGoalId);
   const queuedGoals = goals.filter(g => g.status === 'queued');
-  const completedGoals = goals.filter(g => g.status === 'completed');
 
   return (
     <div className="space-y-8">
-      {/* Current Goal Section */}
+      {/* Current Goal & Queue Section */}
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Current Active Goal</h2>
         {isLoading ? <p>Loading...</p> : activeGoal ? (
@@ -86,8 +95,6 @@ export default function GroupPurchaseTab({ chama, members, userRole, onUpdate })
             <p className="text-gray-500">There is no active purchase goal.</p>
         )}
       </div>
-
-      {/* Goal Queue Section */}
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold">Purchase Queue</h3>
@@ -108,12 +115,48 @@ export default function GroupPurchaseTab({ chama, members, userRole, onUpdate })
         </ul>
       </div>
 
+      {/* --- Purchase History Section --- */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+          <History className="w-6 h-6 mr-3 text-indigo-600"/>
+          Completed Purchases
+        </h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">Beneficiary</th>
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="py-3 px-4 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {history.length > 0 ? history.map(cycle => (
+                <tr key={cycle._id}>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {cycle.beneficiaryId?.firstName || 'N/A'} {cycle.beneficiaryId?.lastName}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{cycle.itemDescription}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(cycle.endDate).toLocaleDateString()}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-semibold text-green-600">{formatCurrency(cycle.actualAmount)}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="4" className="text-center py-6 text-sm text-gray-500">No purchases have been completed yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {isModalOpen && <AddGoalModal members={members} chamaId={chama._id} onClose={() => setIsModalOpen(false)} onGoalAdded={() => { fetchData(); onUpdate(); }} />}
     </div>
   );
 }
 
-// --- AddGoalModal Sub-component ---
+// AddGoalModal Sub-component
 function AddGoalModal({ members, chamaId, onClose, onGoalAdded }) {
     const [beneficiaryId, setBeneficiaryId] = useState('');
     const [itemDescription, setItemDescription] = useState('');

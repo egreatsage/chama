@@ -28,6 +28,16 @@ export async function GET(request, { params }) {
         select: 'firstName lastName photoUrl',
         model: User
       })
+      // .populate({
+      //   path:'beneficiaryId',
+      //   select: 'firstName lastName photoUrl',
+      //   model: User
+      // })
+      // .populate({
+      //   path:'recipientId',
+      //   select: 'firstName lastName photoUrl',
+      //   model: User
+      // })
       .sort({ createdAt: -1 });
 
     return NextResponse.json({ cycles });
