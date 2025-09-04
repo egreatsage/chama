@@ -5,7 +5,7 @@
 import { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable'; // Import autoTable directly
 import {
     MagnifyingGlassIcon,
     UserPlusIcon,
@@ -88,19 +88,38 @@ export default function MembersList({ members, chama, onActionComplete }) {
 
         filteredMembers.forEach(member => {
             const memberData = [
-                member.userId.firstName,
-                member.userId.lastName,
-                member.userId.phoneNumber,
-                member.role,
-                member.userId.email,
+                member.userId.firstName || '',
+                member.userId.lastName || '',
+                member.userId.phoneNumber || '',
+                member.role || '',
+                member.userId.email || '',
             ];
             tableRows.push(memberData);
         });
 
-        doc.autoTable(tableColumn, tableRows, { startY: 20 });
         doc.text(`Members of ${chama.name}`, 14, 15);
+        
+        // Use autoTable function directly
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 20,
+            styles: {
+                fontSize: 8,
+                cellPadding: 2,
+            },
+            headStyles: {
+                fillColor: [66, 139, 202],
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            alternateRowStyles: {
+                fillColor: [245, 245, 245]
+            }
+        });
+        
         doc.save(`${chama.name}_members.pdf`);
-    }
+    };
 
     return (
         <div className="bg-white shadow-sm rounded-lg border border-gray-200">
