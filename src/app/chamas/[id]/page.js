@@ -16,6 +16,7 @@ import ContributionsTab from '@/components/chama/ContributionsTab';
 import EditChamaModal from '@/components/chama/EditChamaModal';
 import RulesTab from '@/components/chama/RulesTab';
 import GroupPurchaseTab from '@/components/chama/GroupPurchaseTab';
+import ChatTab from '@/components/chama/ChatTab'; // Import the new ChatTab
 
 export default function ChamaDetailPage() {
   const [chama, setChama] = useState(null);
@@ -92,14 +93,16 @@ export default function ChamaDetailPage() {
         if (chama.operationType === 'rotation_payout') {
           return <RotationTab chama={chama} members={members} userRole={chama.userRole} onRotationUpdate={fetchData} />;
         }
-
+        break;
       case 'group_purchase': 
         if (chama.operationType === 'group_purchase') {
         return <GroupPurchaseTab chama={chama} members={members} userRole={chama.userRole} onUpdate={fetchData} />;
         }
-
+        break;
       case 'rules':
           return <RulesTab chama={chama} userRole={chama.userRole} />;
+      case 'chat': // Add the new chat case
+          return <ChatTab chama={chama} />;
       case 'details':
       default:
         if (chama.operationType === 'equal_sharing') {
@@ -142,9 +145,11 @@ export default function ChamaDetailPage() {
                         Group Purchase
                         </TabButton>
                     )}
-                    {/* --- FIX: The tab is now visible to all members --- */}
                     <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')}>
                         Rules & Settings
+                    </TabButton>
+                    <TabButton isActive={activeTab === 'chat'} onClick={() => setActiveTab('chat')}>
+                        Chat
                     </TabButton>
                 </nav>
             </div>
@@ -176,4 +181,3 @@ function TabButton({ isActive, onClick, children }) {
     </button>
   );
 }
-
