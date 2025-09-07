@@ -97,6 +97,9 @@ export default function LoansTab({ chama, userRole }) {
 }
 
 function LoanRow({ loan, isAdmin, onAction }) {
+    const [isRejecting, setIsRejecting] = useState(false);
+    const [rejectionReason, setRejectionReason] = useState('');
+
     const getStatusBadge = (status) => {
         const styles = {
             pending: 'bg-yellow-100 text-yellow-800',
@@ -105,6 +108,11 @@ function LoanRow({ loan, isAdmin, onAction }) {
             repaid: 'bg-blue-100 text-blue-800',
         };
         return <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${styles[status] || 'bg-gray-100'}`}>{status}</span>;
+    };
+
+    const handleConfirmReject = () => {
+        onAction(loan._id, 'rejected', rejectionReason);
+        setIsRejecting(false);
     };
 
     return (
@@ -116,13 +124,23 @@ function LoanRow({ loan, isAdmin, onAction }) {
             <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(loan.createdAt).toLocaleDateString()}</td>
             {isAdmin && (
                 <td className="px-4 py-4 whitespace-nowrap text-center text-sm">
-                    {loan.status === 'pending' && (
+                    {loan.status === 'pending' && !isRejecting && (
                         <div className="flex justify-center space-x-2">
                             <button onClick={() => onAction(loan._id, 'approved')} className="p-1 text-green-600 hover:text-green-900"><CheckIcon className="w-5 h-5"/></button>
-                            <button onClick={() => {
-                                const reason = prompt("Reason for rejection (optional):");
-                                onAction(loan._id, 'rejected', reason);
-                            }} className="p-1 text-red-600 hover:text-red-900"><XIcon className="w-5 h-5"/></button>
+                            <button onClick={() => setIsRejecting(true)} className="p-1 text-red-600 hover:text-red-900"><XIcon className="w-5 h-5"/></button>
+                        </div>
+                    )}
+                    {loan.status === 'pending' && isRejecting && (
+                        <div className="flex items-center space-x-1">
+                            <input
+                                type="text"
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                placeholder="Reason (optional)"
+                                className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs"
+                            />
+                            <button onClick={handleConfirmReject} className="p-1 text-green-600 hover:text-green-900"><CheckIcon className="w-5 h-5"/></button>
+                            <button onClick={() => setIsRejecting(false)} className="p-1 text-gray-500 hover:text-gray-700"><XIcon className="w-5 h-5"/></button>
                         </div>
                     )}
                     {loan.status === 'approved' && (
@@ -185,3 +203,4 @@ function RequestLoanModal({ chama, onClose, onLoanRequested }) {
         </div>
     );
 }
+
