@@ -22,7 +22,7 @@ const ChamaCycleSchema = new Schema({
   beneficiaryId: { type: Schema.Types.ObjectId, ref: 'User' },
   expectedAmount: { type: Number },
   actualAmount: { type: Number },
-  itemDescription: { type: String }, // NEW: Field for purchase item description
+  
   
   // Common Fields
   startDate: { type: Date, required: true },

@@ -14,7 +14,6 @@ import EqualSharingTab from '@/components/chama/EqualSharingTab';
 import ContributionsTab from '@/components/chama/ContributionsTab';
 import EditChamaModal from '@/components/chama/EditChamaModal';
 import RulesTab from '@/components/chama/RulesTab';
-import GroupPurchaseTab from '@/components/chama/GroupPurchaseTab';
 import ChatTab from '@/components/chama/ChatTab';
 import LoansTab from '@/components/chama/LoansTab';
 
@@ -132,13 +131,7 @@ export default function ChamaDetailPage() {
           return <RotationTab chama={chama} members={members} userRole={chama.userRole} onRotationUpdate={fetchData} />;
         }
         break;
-        
-      case 'group_purchase': 
-        if (chama.operationType === 'group_purchase') {
-          return <GroupPurchaseTab chama={chama} members={members} userRole={chama.userRole} onUpdate={fetchData} />;
-        }
-        break;
-        
+     
       case 'rules':
         return <RulesTab chama={chama} userRole={chama.userRole} />;
         
@@ -237,15 +230,7 @@ export default function ChamaDetailPage() {
                     </TabButton>
                   )}
                   
-                  {chama.operationType === 'group_purchase' && (
-                    <TabButton 
-                      isActive={activeTab === 'group_purchase'} 
-                      onClick={() => setActiveTab('group_purchase')}
-                      color="blue"
-                    >
-                      Group Purchase
-                    </TabButton>
-                  )}
+                
                   
                   <TabButton 
                     isActive={activeTab === 'rules'} 

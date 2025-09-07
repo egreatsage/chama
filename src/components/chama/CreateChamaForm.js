@@ -53,7 +53,7 @@ const Step2_OperationType = ({ formData, handleChange }) => (
       {[
         { value: 'equal_sharing', label: 'Equal Sharing', desc: 'Members save towards a common goal and share equally' },
         { value: 'rotation_payout', label: 'Rotation Payout', desc: 'Members take turns receiving the collected funds (Merry-Go-Round)' },
-        { value: 'group_purchase', label: 'Group Purchase', desc: 'Pool money together for bulk purchases or investments' }
+        
       ].map((option) => (
         <label key={option.value} className={`block p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
           formData.operationType === option.value 
@@ -152,18 +152,7 @@ const Step3_Configuration = ({ formData, handleChange, handleConfigChange }) => 
             </div>
           </div>
         );
-      case 'group_purchase':
-        return (
-          <div className="bg-blue-50 p-6 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <p className="text-blue-800 font-medium">Configuration Note</p>
-            </div>
-            <p className="text-blue-700 text-sm leading-relaxed">
-              Group purchase configuration will be set up after the Chama is created. You'll be able to define specific purchase goals and member requirements.
-            </p>
-          </div>
-        );
+      
       default:
         return null;
     }

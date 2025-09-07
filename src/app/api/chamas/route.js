@@ -37,10 +37,7 @@ export async function POST(request) {
       chamaData.equalSharing = typeSpecificConfig;
     } else if (operationType === 'rotation_payout') {
       chamaData.rotationPayout = typeSpecificConfig;
-    } else if (operationType === 'group_purchase') {
-      chamaData.groupPurchase = typeSpecificConfig;
-    }
-    // --- END OF FIX ---
+    } 
 
     const newChama = await Chama.create(chamaData);
 

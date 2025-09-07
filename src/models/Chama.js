@@ -39,7 +39,7 @@ const ChamaSchema = new Schema({
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   operationType: {
     type: String,
-    enum: ['equal_sharing', 'rotation_payout', 'group_purchase'],
+    enum: ['equal_sharing', 'rotation_payout'],
     required: true,
   },
   contributionAmount: { type: Number, default: 0 },

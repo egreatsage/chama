@@ -81,7 +81,7 @@ export default function AdminHeader({ children }) {
                   </div>
                 </Transition.Child>
                 <div className="flex flex-shrink-0 items-center px-4">
-                   <h1 className="text-xl font-bold text-indigo-600">Admin Panel</h1>
+                   <Link className='text-xl font-bold text-indigo-600' href='/'>Chama App</Link>
                 </div>
                 <div className="mt-5 h-0 flex-1 overflow-y-auto">
                   <nav className="space-y-1 px-2">
@@ -119,7 +119,7 @@ export default function AdminHeader({ children }) {
       <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
         <div className="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white pt-5">
           <div className="flex flex-shrink-0 items-center px-4">
-             <h1 className="text-xl font-bold text-indigo-600">Admin Panel</h1>
+             <Link className='text-xl font-bold text-indigo-600' href='/'>Chama App</Link>
           </div>
           <div className="mt-5 flex flex-grow flex-col">
             <nav className="flex-1 space-y-1 px-2 pb-4">
