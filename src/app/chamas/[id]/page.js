@@ -17,6 +17,7 @@ import EditChamaModal from '@/components/chama/EditChamaModal';
 import RulesTab from '@/components/chama/RulesTab';
 import GroupPurchaseTab from '@/components/chama/GroupPurchaseTab';
 import ChatTab from '@/components/chama/ChatTab'; // Import the new ChatTab
+import LoansTab from '@/components/chama/LoansTab';
 
 export default function ChamaDetailPage() {
   const [chama, setChama] = useState(null);
@@ -103,6 +104,9 @@ export default function ChamaDetailPage() {
           return <RulesTab chama={chama} userRole={chama.userRole} />;
       case 'chat': // Add the new chat case
           return <ChatTab chama={chama} />;
+      case 'loans':
+          return <LoansTab chama={chama} userRole={chama.userRole} />;
+
       case 'details':
       default:
         if (chama.operationType === 'equal_sharing') {
@@ -147,6 +151,9 @@ export default function ChamaDetailPage() {
                     )}
                     <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')}>
                         Rules & Settings
+                    </TabButton>
+                    <TabButton isActive={activeTab === 'loans'} onClick={() => setActiveTab('loans')}>
+                        Loans
                     </TabButton>
                     <TabButton isActive={activeTab === 'chat'} onClick={() => setActiveTab('chat')}>
                         Chat
