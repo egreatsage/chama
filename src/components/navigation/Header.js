@@ -54,20 +54,7 @@ export default function Header() {
                 <Transition>
                   
                   <Menu.Items className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                    <Menu.Item>
-                        {({ active }) => (
-                          <div>
-                           
-                        <Link
-                          href="/profile"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          Profile
-                        </Link>
-                   
-                          </div>
-                        )}
-                      </Menu.Item>
+                    
                       <Menu.Item>
                         {({ active }) => (
                           <div>
@@ -77,7 +64,7 @@ export default function Header() {
                           href="/admin"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
-                           Dashboard
+                           Admin Panel
                         </Link>
                       )
                     }
@@ -92,7 +79,7 @@ export default function Header() {
                           href="/dashboard"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
-                           My Dashboard
+                           Dashboard
                         </Link>
                     
                           </div>
