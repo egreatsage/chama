@@ -404,6 +404,42 @@ The Chama App Team
     };
   }
 }
+const createLoanStatusHtml = ({ memberName, chamaName, loanAmount, status, reason = '' }) => `
+  <!DOCTYPE html>
+  <html>
+  <body>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+      <h2 style="color: #333;">Loan Request Update</h2>
+      <p>Hello ${memberName},</p>
+      <p>This is an update on your loan request of <strong>KES ${loanAmount.toLocaleString()}</strong> in the <strong>${chamaName}</strong> chama.</p>
+      <div style="background-color: #f2f2f2; padding: 15px; border-radius: 5px;">
+        <p><strong>Status:</strong> ${status.charAt(0).toUpperCase() + status.slice(1)}</p>
+        ${status === 'rejected' && reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+      </div>
+      <p>You can view the details in the app.</p>
+      <p>Thank you,<br/>The ChamaApp Team</p>
+    </div>
+  </body>
+  </html>
+`;
+export async function sendLoanStatusEmail({ to, memberName, chamaName, loanAmount, status, reason = '' }) {
+    const subject = `Your loan request in ${chamaName} has been ${status}`;
+    const html = createLoanStatusHtml({ memberName, chamaName, loanAmount, status, reason });
+
+    const mailOptions = {
+        from: `"ChamaApp Notifications" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Loan status email sent to ${to}`);
+    } catch (error) {
+        console.error(`Failed to send loan status email to ${to}:`, error);
+    }
+}
 
 
 /**

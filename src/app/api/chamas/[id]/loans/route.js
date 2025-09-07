@@ -23,25 +23,19 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Access Forbidden." }, { status: 403 });
     }
 
-    let loans;
-    // Chairpersons and treasurers can see all loans
-    if (['chairperson', 'treasurer'].includes(membership.role)) {
-      loans = await Loan.find({ chamaId })
+    // All members can see all loans
+    const loans = await Loan.find({ chamaId })
         .populate({ path: 'userId', select: 'firstName lastName photoUrl', model: User })
         .sort({ createdAt: 'desc' });
-    } else {
-      // Regular members can only see their own loans
-      loans = await Loan.find({ chamaId, userId: user.id })
-        .populate({ path: 'userId', select: 'firstName lastName photoUrl', model: User })
-        .sort({ createdAt: 'desc' });
-    }
-
+    
     return NextResponse.json({ loans });
   } catch (error) {
     console.error("Failed to fetch loans:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}// POST: Request a new loan
+}
+
+// POST: Request a new loan
 export async function POST(request, { params }) {
   await connectDB();
   try {
@@ -81,3 +75,4 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
