@@ -69,7 +69,7 @@ function ProfileContent() {
 
   return (
     <div className="max-w-full mx-auto py-6 ">
-      <div className="px-4 py-6 sm:px-0">
+      <div className="px-2 py-6 sm:px-0">
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
           <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
             <div>

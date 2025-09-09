@@ -1,4 +1,4 @@
- // /components/auth/RegisterForm.js
+// /components/auth/RegisterForm.js
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -6,7 +6,72 @@ import useAuthStore from '@/store/authStore';
 import Link from 'next/link';
 import ImageUpload from '@/components/ui/ImageUpload';
 import toast from 'react-hot-toast';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Eye, EyeOff } from 'lucide-react';
+
+// Reusable PasswordInput Component
+const PasswordInput = ({ 
+  id,
+  name,
+  value,
+  onChange,
+  placeholder,
+  label,
+  required = false,
+  autoComplete,
+  error,
+  disabled = false,
+  className = ""
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      <div className="relative mt-1">
+        <input
+          id={id}
+          name={name}
+          type={showPassword ? "text" : "password"}
+          autoComplete={autoComplete}
+          required={required}
+          disabled={disabled}
+          className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${
+            error ? 'border-red-300' : 'border-gray-300'
+          } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+            disabled ? 'bg-gray-100 cursor-not-allowed' : ''
+          } ${className}`}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+        />
+        <button
+          type="button"
+          onClick={togglePasswordVisibility}
+          disabled={disabled}
+          className={`absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 focus:outline-none ${
+            disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+          }`}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? (
+            <EyeOff className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+      {error && (
+        <p className="mt-1 text-sm text-red-600">{error}</p>
+      )}
+    </div>
+  );
+};
 
 export default function RegisterForm() {
   const [formData, setFormData] = useState({
@@ -86,7 +151,7 @@ export default function RegisterForm() {
         fontWeight: "500",
       },
     });
-      router.push('/profile');
+      router.push('/dashboard');
     }
   };
 
@@ -187,7 +252,7 @@ export default function RegisterForm() {
                 type="tel"
                 required
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${validationErrors.phoneNumber ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-                placeholder="+1 (555) 123-4567"
+                placeholder="0700-000-000"
                 value={formData.phoneNumber}
                 onChange={handleChange}
               />
@@ -198,44 +263,30 @@ export default function RegisterForm() {
             </div>
            
              <div className='grid md:grid-cols-2 gap-4'>
-               <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${validationErrors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-              />
-              {validationErrors.password && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
-              )}
-            </div>
+               <PasswordInput
+                 id="password"
+                 name="password"
+                 value={formData.password}
+                 onChange={handleChange}
+                 placeholder="Password"
+                 label="Password"
+                 required
+                 autoComplete="new-password"
+                 error={validationErrors.password}
+                 disabled={isLoading}
+               />
             
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${validationErrors.confirmPassword ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-                placeholder="Confirm Password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-              />
-              {validationErrors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.confirmPassword}</p>
-              )}
-            </div>
+               <PasswordInput
+                 id="confirmPassword"
+                 name="confirmPassword"
+                 value={formData.confirmPassword}
+                 onChange={handleChange}
+                 placeholder="Confirm Password"
+                 label="Confirm Password"
+                 required
+                 error={validationErrors.confirmPassword}
+                 disabled={isLoading}
+               />
              </div>
             
           </div>

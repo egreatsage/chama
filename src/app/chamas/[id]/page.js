@@ -190,7 +190,7 @@ export default function ChamaDetailPage() {
             {/* Enhanced Tab Navigation */}
             <div className="border-b border-gray-200 bg-gray-50">
               <nav className="flex overflow-x-auto scrollbar-hide" aria-label="Tabs">
-                <div className="flex min-w-full sm:min-w-0 space-x-1 px-4 sm:px-6">
+                <div className="flex min-w-full sm:min-w-0 space-x-1 p sm:px-6">
                   <TabButton 
                     isActive={activeTab === 'details'} 
                     onClick={() => setActiveTab('details')}

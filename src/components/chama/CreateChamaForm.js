@@ -166,7 +166,7 @@ const Step3_Configuration = ({ formData, handleChange, handleConfigChange }) => 
       <div className="space-y-6 mb-8">
         <div>
           <label htmlFor="contributionAmount" className="block text-sm font-semibold text-gray-700 mb-2">
-            Member Contribution Amount (KES) *
+            Contribution Amount Per Member (KES) *
           </label>
           <input 
             type="number" 

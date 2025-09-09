@@ -228,20 +228,22 @@ function ManageChamas() {
                                     <tr key={chama._id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {editingId === chama._id ? (
-                                                <div className="space-y-2">
+                                                <div className="space-y-2 grid grid-cols-1 md:grid-cols-1 gap-2">
                                                     <input 
                                                         value={editFormData.name} 
                                                         onChange={(e) => setEditFormData({...editFormData, name: e.target.value})} 
-                                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                        className="block w-full text-gray-800 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                                         placeholder="Chama name"
                                                     />
                                                     <textarea 
                                                         value={editFormData.description} 
                                                         onChange={(e) => setEditFormData({...editFormData, description: e.target.value})} 
-                                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                        className="block text-gray-800 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                                         placeholder="Description"
                                                         rows="2"
                                                     />
+                                                    
+                                                    
                                                 </div>
                                             ) : (
                                                 <div>

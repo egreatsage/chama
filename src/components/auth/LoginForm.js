@@ -5,7 +5,63 @@ import { useRouter } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Eye, EyeOff } from 'lucide-react';
+
+// Reusable PasswordInput Component
+const PasswordInput = ({ 
+  id,
+  name,
+  value,
+  onChange,
+  placeholder,
+  required = false,
+  autoComplete,
+  disabled = false,
+  className = ""
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  return (
+    <div className="relative">
+      <label htmlFor={id} className="sr-only">
+        Password
+      </label>
+      <input
+        id={id}
+        name={name}
+        type={showPassword ? "text" : "password"}
+        autoComplete={autoComplete}
+        required={required}
+        disabled={disabled}
+        className={`appearance-none rounded-md relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm ${
+          disabled ? 'bg-gray-100 cursor-not-allowed' : ''
+        } ${className}`}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+      />
+      <button
+        type="button"
+        onClick={togglePasswordVisibility}
+        disabled={disabled}
+        className={`absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 focus:outline-none z-20 ${
+          disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+        }`}
+        aria-label={showPassword ? "Hide password" : "Show password"}
+      >
+        {showPassword ? (
+          <EyeOff className="h-4 w-4" />
+        ) : (
+          <Eye className="h-4 w-4" />
+        )}
+      </button>
+    </div>
+  );
+};
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
@@ -69,7 +125,7 @@ export default function LoginForm() {
             </div>
           )}
           
-          <div className="rounded-md  -space-y-px ">
+          <div className="rounded-md -space-y-px">
             <div className='mb-4'>
               <label htmlFor="email" className="sr-only">
                 Email address
@@ -80,26 +136,22 @@ export default function LoginForm() {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900  focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
                 value={formData.email}
                 onChange={handleChange}
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900  focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
+                placeholder="Password"
+                required
+                autoComplete="current-password"
+                disabled={isLoading}
               />
             </div>
           </div>
