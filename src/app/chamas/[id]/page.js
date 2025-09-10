@@ -1,3 +1,4 @@
+// File Path: src/app/chamas/[id]/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -20,6 +21,7 @@ import AnnouncementsTab from '@/components/chama/AnnouncementsTab';
 import VotingTab from '@/components/chama/VotingTab';
 import UpdatesTab from '@/components/chama/UpdatesTab';
 import TransactionsTab from '@/components/chama/TransactionsTab';
+
 
 export default function ChamaDetailPage() {
   const [chama, setChama] = useState(null);
@@ -126,35 +128,28 @@ export default function ChamaDetailPage() {
     switch (activeTab) {
       case 'members':
         return <MembersList members={members} chama={chama} onActionComplete={fetchData} />;
-
       case 'contributions':
         return <ContributionsTab chama={chama} members={members} userRole={chama.userRole} currentUserId={currentUser?.id} />;
-
       case 'rotation':
         if (chama.operationType === 'rotation_payout') {
           return <RotationTab chama={chama} members={members} userRole={chama.userRole} onRotationUpdate={fetchData} />;
         }
         break;
-     
       case 'rules':
         return <RulesTab chama={chama} userRole={chama.userRole} />;
-        
       case 'chat':
         return <ChatTab chama={chama} />;
-        
       case 'loans':
-        return <LoansTab chama={chama} userRole={chama.userRole} />;
+        return <LoansTab chama={chama} userRole={chama.userRole} currentUserId={currentUser?.id} />;
       case 'announcements':
-        return <AnnouncementsTab chama={chama} userRole={chama.userRole} />
-      case 'announcements':
-        return <AnnouncementsTab chama={chama} userRole={chama.userRole} />
-      case 'Voting':
-        return <VotingTab chama={chama} userRole={chama.userRole} />
-      case 'Updates':
-        return <UpdatesTab chama={chama} userRole={chama.userRole} />
-      case 'Investments':
-        return <TransactionsTab chama={chama} userRole={chama.userRole} />
-
+        return <AnnouncementsTab chama={chama} userRole={chama.userRole} />;
+      case 'voting':
+        return <VotingTab chama={chama} userRole={chama.userRole} />;
+      case 'updates':
+        return <UpdatesTab chama={chama} userRole={chama.userRole} />;
+      case 'finances':
+          // FIX: Pass the fetchData function as the onDataUpdate prop
+          return <TransactionsTab chama={chama} userRole={chama.userRole} onDataUpdate={fetchData} />;
       case 'details':
       default:
         if (chama.operationType === 'equal_sharing') {
@@ -205,19 +200,11 @@ export default function ChamaDetailPage() {
             <div className="border-b border-gray-200 bg-gray-50">
               <nav className="flex overflow-x-auto scrollbar-hide" aria-label="Tabs">
                 <div className="flex min-w-full sm:min-w-0 space-x-1 p sm:px-6">
-                  <TabButton 
-                    isActive={activeTab === 'details'} 
-                    onClick={() => setActiveTab('details')}
-                    color="blue"
-                  >
+                  <TabButton isActive={activeTab === 'details'} onClick={() => setActiveTab('details')} color="blue">
                     {chama.operationType === 'equal_sharing' ? 'Savings Goal' : 'Details'}
                   </TabButton>
-                  
-                  <TabButton 
-                    isActive={activeTab === 'members'} 
-                    onClick={() => setActiveTab('members')}
-                    color="green"
-                  >
+                  <TabButton isActive={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} color="red">Announcements</TabButton>
+                  <TabButton isActive={activeTab === 'members'} onClick={() => setActiveTab('members')} color="green">
                     <span className="flex items-center space-x-2">
                       <span>Members</span>
                       <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-semibold">
@@ -225,80 +212,16 @@ export default function ChamaDetailPage() {
                       </span>
                     </span>
                   </TabButton>
-                  
-                  <TabButton 
-                    isActive={activeTab === 'contributions'} 
-                    onClick={() => setActiveTab('contributions')}
-                    color="blue"
-                  >
-                    Contributions
-                  </TabButton>
-                  
+                  <TabButton isActive={activeTab === 'contributions'} onClick={() => setActiveTab('contributions')} color="blue">Contributions</TabButton>
                   {chama.operationType === 'rotation_payout' && (
-                    <TabButton 
-                      isActive={activeTab === 'rotation'} 
-                      onClick={() => setActiveTab('rotation')}
-                      color="green"
-                    >
-                      Rotation
-                    </TabButton>
+                    <TabButton isActive={activeTab === 'rotation'} onClick={() => setActiveTab('rotation')} color="green">Rotation</TabButton>
                   )}
-                  
-                
-                  
-                  <TabButton 
-                    isActive={activeTab === 'rules'} 
-                    onClick={() => setActiveTab('rules')}
-                    color="red"
-                  >
-                    <span className="hidden sm:inline">Rules & Settings</span>
-                    <span className="sm:hidden">Rules</span>
-                  </TabButton>
-                  
-                  <TabButton 
-                    isActive={activeTab === 'loans'} 
-                    onClick={() => setActiveTab('loans')}
-                    color="green"
-                  >
-                    Loans
-                  </TabButton>
-                  
-                  <TabButton 
-                    isActive={activeTab === 'chat'} 
-                    onClick={() => setActiveTab('chat')}
-                    color="blue"
-                  >
-                    Chat
-                  </TabButton>
-                  <TabButton 
-                    isActive={activeTab === 'announcements'} 
-                    onClick={() => setActiveTab('announcements')}
-                    color="blue"
-                  >
-                    Announcements
-                  </TabButton>
-                  <TabButton 
-                    isActive={activeTab === 'Voting'} 
-                    onClick={() => setActiveTab('Voting')}
-                    color="teal"
-                  >
-                    Voting
-                  </TabButton>
-
-                  <TabButton 
-                    isActive={activeTab === 'Updates'} 
-                    onClick={() => setActiveTab('Updates')}
-                    color="teal"
-                  >
-                    Stories and Blogs
-                  </TabButton>
-                  <TabButton 
-                    isActive={activeTab === 'Investments'} 
-                    onClick={() => setActiveTab('Investments')}
-                    color="teal"
-                  >
-                    Investments
-                  </TabButton>
+                  <TabButton isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} color="red">Finances</TabButton>
+                  <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')} color="red">Rules</TabButton>
+                  <TabButton isActive={activeTab === 'loans'} onClick={() => setActiveTab('loans')} color="green">Loans</TabButton>
+                  <TabButton isActive={activeTab === 'voting'} onClick={() => setActiveTab('voting')} color="blue">Voting</TabButton>
+                  <TabButton isActive={activeTab === 'updates'} onClick={() => setActiveTab('updates')} color="green">Updates</TabButton>
+                  <TabButton isActive={activeTab === 'chat'} onClick={() => setActiveTab('chat')} color="blue">Chat</TabButton>
                 </div>
               </nav>
             </div>
@@ -361,3 +284,4 @@ function TabButton({ isActive, onClick, children, color = 'blue' }) {
     </button>
   );
 }
+
