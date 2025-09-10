@@ -316,13 +316,13 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
             value={stats.unpaid}
             color="red"
           />
-          <StatsCard 
+          {/* <StatsCard 
             icon={CurrencyDollarIcon}
             title="Total Collected"
             value={formatCurrency(stats.totalCollected)}
             subtitle={`of ${formatCurrency(stats.expectedTotal)}`}
             color="blue"
-          />
+          /> */}
         </div>
       )}
     

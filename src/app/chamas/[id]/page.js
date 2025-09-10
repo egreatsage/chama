@@ -132,8 +132,7 @@ export default function ChamaDetailPage() {
         return <ContributionsTab chama={chama} members={members} userRole={chama.userRole} currentUserId={currentUser?.id} />;
       case 'rotation':
         if (chama.operationType === 'rotation_payout') {
-          return <RotationTab chama={chama} members={members} userRole={chama.userRole} onRotationUpdate={fetchData} />;
-        }
+          return <RotationTab chama={chama} members={members} userRole={chama.userRole} onRotationUpdate={fetchData} />;}
         break;
       case 'rules':
         return <RulesTab chama={chama} userRole={chama.userRole} />;
@@ -148,9 +147,9 @@ export default function ChamaDetailPage() {
       case 'updates':
         return <UpdatesTab chama={chama} userRole={chama.userRole} />;
       case 'finances':
-          // FIX: Pass the fetchData function as the onDataUpdate prop
-          return <TransactionsTab chama={chama} userRole={chama.userRole} onDataUpdate={fetchData} />;
+        return <TransactionsTab chama={chama} userRole={chama.userRole} onDataUpdate={fetchData} />;
       case 'details':
+
       default:
         if (chama.operationType === 'equal_sharing') {
           return <EqualSharingTab chama={chama} userRole={chama.userRole} onDataUpdate={fetchData} />;
@@ -201,7 +200,7 @@ export default function ChamaDetailPage() {
               <nav className="flex overflow-x-auto scrollbar-hide" aria-label="Tabs">
                 <div className="flex min-w-full sm:min-w-0 space-x-1 p sm:px-6">
                   <TabButton isActive={activeTab === 'details'} onClick={() => setActiveTab('details')} color="blue">
-                    {chama.operationType === 'equal_sharing' ? 'Savings Goal' : 'Details'}
+                    {chama.operationType === 'equal_sharing' ? 'Equal_sharing summary' : 'Rotation summary'}
                   </TabButton>
                   <TabButton isActive={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} color="red">Announcements</TabButton>
                   <TabButton isActive={activeTab === 'members'} onClick={() => setActiveTab('members')} color="green">

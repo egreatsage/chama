@@ -94,51 +94,34 @@ export async function PUT(request, { params }) {
 // POST: Executes the payout and advances the rotation
 export async function POST(request, { params }) {
     await connectDB();
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
         const user = await getServerSideUser();
         const { id: chamaId } = await params;
 
-        if (!user) {
-            await session.abortTransaction();
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-        }
+        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-        const chama = await Chama.findById(chamaId).session(session);
-        if (!chama) {
-            await session.abortTransaction();
-            return NextResponse.json({ error: "Chama not found." }, { status: 404 });
-        }
+        const chama = await Chama.findById(chamaId);
+        if (!chama) return NextResponse.json({ error: "Chama not found." }, { status: 404 });
         
-        const membership = await ChamaMember.findOne({ userId: user.id, chamaId }).session(session);
+        const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
         if (!membership || membership.role !== 'chairperson') {
-            await session.abortTransaction();
             return NextResponse.json({ error: "Only the chairperson can execute a payout." }, { status: 403 });
         }
         
         const { start, end } = getCurrentPeriod(chama.contributionFrequency);
-        const activeMembers = await ChamaMember.find({ chamaId, status: 'active' }).session(session);
-        const contributionsInPeriod = await Contribution.find({ chamaId, status: 'confirmed', createdAt: { $gte: start, $lte: end } }).session(session);
+        const activeMembers = await ChamaMember.find({ chamaId, status: 'active' });
+        const contributionsInPeriod = await Contribution.find({ chamaId, status: 'confirmed', createdAt: { $gte: start, $lte: end } });
         
         if (contributionsInPeriod.length < activeMembers.length) {
-            await session.abortTransaction();
             return NextResponse.json({ error: "Cannot proceed. Not all members have contributed for this period." }, { status: 400 });
         }
 
         const { rotationOrder, currentRecipientIndex } = chama.rotationPayout;
         const recipientUserId = rotationOrder[currentRecipientIndex];
-        const recipientUser = await User.findById(recipientUserId).session(session);
+        const recipientUser = await User.findById(recipientUserId);
         const totalPot = chama.contributionAmount * activeMembers.length;
 
-        // --- FIX: Ensure the Chama has enough balance for the payout ---
-        if (chama.currentBalance < totalPot) {
-            await session.abortTransaction();
-            return NextResponse.json({ error: `Insufficient funds. Current balance is ${chama.currentBalance}, but payout requires ${totalPot}.` }, { status: 400 });
-        }
-
-        await ChamaCycle.create([{
+        await ChamaCycle.create({
             chamaId,
             cycleType: 'rotation_cycle',
             cycleNumber: currentRecipientIndex + 1,
@@ -148,14 +131,12 @@ export async function POST(request, { params }) {
             expectedAmount: totalPot,
             actualAmount: totalPot,
             status: 'completed'
-        }], { session });
+        });
 
         const nextIndex = (currentRecipientIndex + 1) % rotationOrder.length;
         chama.rotationPayout.currentRecipientIndex = nextIndex;
-        
-        // --- FIX: Correctly decrement the balance instead of resetting it ---
-        chama.currentBalance -= totalPot;
-        await chama.save({ session });
+        chama.currentBalance = 0;
+        await chama.save();
         
         if (recipientUser) {
             await sendRotationPayoutEmail({
@@ -168,15 +149,10 @@ export async function POST(request, { params }) {
             });
         }
 
-        await session.commitTransaction();
         return NextResponse.json({ message: `Payout successfully made to ${recipientUser.firstName}. Rotation advanced.` });
 
     } catch (error) {
-        await session.abortTransaction();
         console.error("Failed to advance rotation:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-    } finally {
-        session.endSession();
     }
 }
-
