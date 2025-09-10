@@ -16,6 +16,8 @@ import EditChamaModal from '@/components/chama/EditChamaModal';
 import RulesTab from '@/components/chama/RulesTab';
 import ChatTab from '@/components/chama/ChatTab';
 import LoansTab from '@/components/chama/LoansTab';
+import AnnouncementsTab from '@/components/chama/AnnouncementsTab';
+import VotingTab from '@/components/chama/VotingTab';
 
 export default function ChamaDetailPage() {
   const [chama, setChama] = useState(null);
@@ -140,6 +142,12 @@ export default function ChamaDetailPage() {
         
       case 'loans':
         return <LoansTab chama={chama} userRole={chama.userRole} />;
+      case 'announcements':
+        return <AnnouncementsTab chama={chama} userRole={chama.userRole} />
+      case 'announcements':
+        return <AnnouncementsTab chama={chama} userRole={chama.userRole} />
+       case 'Voting':
+        return <VotingTab chama={chama} userRole={chama.userRole} />
 
       case 'details':
       default:
@@ -255,6 +263,20 @@ export default function ChamaDetailPage() {
                     color="blue"
                   >
                     Chat
+                  </TabButton>
+                  <TabButton 
+                    isActive={activeTab === 'announcements'} 
+                    onClick={() => setActiveTab('announcements')}
+                    color="blue"
+                  >
+                    Announcements
+                  </TabButton>
+                  <TabButton 
+                    isActive={activeTab === 'Voting'} 
+                    onClick={() => setActiveTab('Voting')}
+                    color="teal"
+                  >
+                    Voting
                   </TabButton>
                 </div>
               </nav>

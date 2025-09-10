@@ -440,6 +440,207 @@ export async function sendLoanStatusEmail({ to, memberName, chamaName, loanAmoun
         console.error(`Failed to send loan status email to ${to}:`, error);
     }
 }
+const createAnnouncementHtml = ({ chamaName, announcementTitle, announcementContent, authorName }) => `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>New Announcement - ${chamaName}</title>
+    <!--[if mso]>
+    <noscript>
+      <xml>
+        <o:OfficeDocumentSettings>
+          <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+      </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+      @media only screen and (max-width: 600px) {
+        .email-container {
+          margin: 10px !important;
+          border-radius: 8px !important;
+        }
+        .header-section {
+          padding: 30px 20px !important;
+        }
+        .header-title {
+          font-size: 24px !important;
+        }
+        .content-section {
+          padding: 30px 20px !important;
+        }
+        .announcement-title {
+          font-size: 20px !important;
+          line-height: 1.3 !important;
+        }
+        .announcement-content {
+          font-size: 15px !important;
+          padding-left: 12px !important;
+        }
+        .cta-button {
+          padding: 14px 20px !important;
+          font-size: 14px !important;
+          display: block !important;
+          width: 200px !important;
+          margin: 0 auto !important;
+        }
+        .footer-section {
+          padding: 20px 15px !important;
+        }
+      }
+      
+      @media only screen and (max-width: 480px) {
+        .email-container {
+          margin: 5px !important;
+        }
+        .header-section {
+          padding: 25px 15px !important;
+        }
+        .content-section {
+          padding: 25px 15px !important;
+        }
+        .announcement-title {
+          font-size: 18px !important;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+    
+    <!-- Preheader text -->
+    <div style="display: none; font-size: 1px; color: #f8fafc; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+      New announcement from ${authorName} in ${chamaName}: ${announcementTitle}
+    </div>
+    
+    <!-- Main container -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8fafc;">
+      <tr>
+        <td style="padding: 20px 0;">
+          <div class="email-container" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 8px rgba(0, 0, 0, 0.06); overflow: hidden; border: 1px solid #e2e8f0;">
+            
+            <!-- Header Section -->
+            <div class="header-section" style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 80%, #1e3a8a 100%); padding: 40px 30px; text-align: center; position: relative; overflow: hidden;">
+              <!-- Decorative elements -->
+              <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; border-radius: 50%; background: rgba(255, 255, 255, 0.1);"></div>
+              <div style="position: absolute; bottom: -30px; left: -30px; width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.1);"></div>
+              
+              <div style="position: relative; z-index: 1;">
+                <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border-radius: 50px; padding: 12px 20px; margin-bottom: 20px; backdrop-filter: blur(10px);">
+                  <span style="font-size: 24px;">📢</span>
+                </div>
+                <h1 class="header-title" style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">New Announcement</h1>
+                <p style="color: #bfdbfe; margin: 12px 0 0 0; font-size: 16px; font-weight: 500;">For your Chama: ${chamaName}</p>
+              </div>
+            </div>
+            
+            <!-- Content Section -->
+            <div class="content-section" style="padding: 40px 30px;">
+              <h2 class="announcement-title" style="color: #1e293b; font-size: 24px; font-weight: 700; margin: 0 0 24px 0; line-height: 1.4; letter-spacing: -0.3px;">
+                ${announcementTitle}
+              </h2>
+              
+              <div class="announcement-content" style="color: #475569; font-size: 16px; line-height: 1.7; border-left: 4px solid #3b82f6; padding-left: 16px; margin-bottom: 32px; background: linear-gradient(90deg, #f1f5f9 0%, transparent 100%); padding: 20px 20px 20px 16px; border-radius: 0 8px 8px 0;">
+                ${announcementContent.replace(/\n/g, '<br>')}
+              </div>
+              
+              <div style="display: flex; align-items: center; margin-bottom: 32px; padding: 16px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #1e40af); display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                  <span style="color: white; font-weight: bold; font-size: 16px;">${authorName.charAt(0).toUpperCase()}</span>
+                </div>
+                <div>
+                  <p style="margin: 0; color: #64748b; font-size: 14px; font-weight: 500;">Posted by</p>
+                  <p style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600;">${authorName}</p>
+                </div>
+              </div>
+              
+              <!-- Call to Action -->
+              <div style="text-align: center; margin-top: 32px;">
+                <a href="#" class="cta-button" style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3); transition: all 0.2s ease; border: 2px solid transparent;">
+                  <span style="margin-right: 8px;">📱</span>
+                  View in App
+                </a>
+              </div>
+            </div>
+            
+            <!-- Footer Section -->
+            <div class="footer-section" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 30px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+              <div style="margin-bottom: 16px;">
+                <div style="display: inline-block; padding: 8px 16px; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0;">
+                  <span style="color: #3b82f6; font-size: 18px; margin-right: 8px;">🏦</span>
+                  <span style="color: #475569; font-size: 14px; font-weight: 600;">${chamaName}</span>
+                </div>
+              </div>
+              
+              <p style="color: #64748b; font-size: 13px; margin: 0; line-height: 1.5;">
+                You are receiving this notification because you are an active member of <strong style="color: #1e293b;">${chamaName}</strong>.
+              </p>
+              
+              <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+                  © 2025 ChamaApp. All rights reserved.
+                </p>
+              </div>
+            </div>
+            
+          </div>
+        </td>
+      </tr>
+    </table>
+    
+    <!-- Fallback for Outlook -->
+    <!--[if mso | IE]>
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="width:600px;">
+      <tr>
+        <td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;">
+    <![endif]-->
+    
+  </body>
+  </html>
+`;
+export async function sendNewAnnouncementEmail({ 
+  recipients, 
+  chamaName, 
+  announcementTitle, 
+  announcementContent, 
+  authorName 
+}) {
+  const mailOptions = {
+    from: `"${chamaName} Announcements" <${process.env.EMAIL_USER}>`,
+    to: recipients, // Nodemailer can handle an array of emails
+    subject: `📢 ${announcementTitle} - ${chamaName}`,
+    html: createAnnouncementHtml({ 
+      chamaName, 
+      announcementTitle, 
+      announcementContent, 
+      authorName 
+    }),
+    // Add text version for better deliverability
+    text: `
+New Announcement from ${chamaName}
+
+${announcementTitle}
+
+${announcementContent}
+
+Posted by: ${authorName}
+
+You are receiving this because you are a member of ${chamaName}.
+    `.trim(),
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`📢 Announcement email sent successfully to ${recipients.length} members of ${chamaName}.`);
+    return { success: true, recipientCount: recipients.length };
+  } catch (error) {
+    console.error("Failed to send announcement email:", error);
+    // Return error info for better debugging
+    return { success: false, error: error.message, recipientCount: recipients.length };
+  }
+}
 
 
 /**
