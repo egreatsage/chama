@@ -103,7 +103,8 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
     
     const currentIndex = chama.rotationPayout?.currentRecipientIndex || 0;
     const currentRecipient = orderedMembers[currentIndex];
-    const allMembersPaid = contributionStatus?.memberStatuses.every(m => m.status === 'Paid');
+        const allMembersPaid = contributionStatus?.stats?.unpaidMembers === 0 && contributionStatus?.stats?.partiallyPaidMembers === 0;
+    const currentPot = contributionStatus?.stats?.totalCollected || 0;
 
     const generateHistoryExcel = () => {
         if (!payoutHistory || payoutHistory.length === 0) {
@@ -458,7 +459,7 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
                                                     {memberMap.get(cycle.recipientId)?.firstName || 'Unknown'} {memberMap.get(cycle.recipientId)?.lastName || 'Member'}
                                                 </td>
                                                 <td className="py-3 px-4 text-right text-sm font-bold text-green-600">
-                                                    {formatCurrency(cycle.actualAmount)}
+                                                    {formatCurrency(currentPot)}
                                                 </td>
                                             </tr>
                                         ))
