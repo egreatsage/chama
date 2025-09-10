@@ -7,7 +7,39 @@ import ChamaMember from "@/models/ChamaMember";
 
 const canManagePosts = (role) => ['chairperson', 'secretary'].includes(role);
 
-// PUT: Update a post
+export async function GET(request, { params }) {
+    await connectDB();
+    try {
+        const user = await getServerSideUser();
+        const { id: chamaId, postId } = params;
+
+        if (!user) {
+            return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+        }
+
+        const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
+        if (!membership) {
+            return NextResponse.json({ error: "Access Forbidden." }, { status: 403 });
+        }
+
+        const post = await Post.findOne({ _id: postId, chamaId })
+            .populate({
+                path: 'authorId',
+                select: 'firstName lastName photoUrl',
+                model: User
+            });
+
+        if (!post) {
+            return NextResponse.json({ error: "Post not found" }, { status: 404 });
+        }
+
+        return NextResponse.json({ post });
+
+    } catch (error) {
+        console.error("Failed to fetch post:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
 export async function PUT(request, { params }) {
     await connectDB();
     try {

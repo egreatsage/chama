@@ -1,10 +1,12 @@
+// src/components/chama/UpdatesTab.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import useAuthStore from '@/store/authStore';
-import { PlusIcon, PencilIcon, TrashIcon, NewspaperIcon, StarIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, NewspaperIcon, StarIcon, BanknotesIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import ImageUpload from '@/components/ui/ImageUpload';
+import Link from 'next/link';
 
 export default function UpdatesTab({ chama, userRole }) {
     const { user: currentUser } = useAuthStore();
@@ -89,7 +91,9 @@ export default function UpdatesTab({ chama, userRole }) {
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (e, id) => {
+        e.stopPropagation(); // Prevent link navigation when deleting
+        e.preventDefault();
         if (window.confirm("Are you sure you want to delete this post?")) {
             const toastId = toast.loading('Deleting post...');
             try {
@@ -118,12 +122,12 @@ export default function UpdatesTab({ chama, userRole }) {
         <div className="bg-white shadow-lg rounded-lg p-4 sm:p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-800">Updates & Stories</h2>
-                
+                {canManage && (
                     <button onClick={() => openModal()} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
                         <PlusIcon className="w-5 h-5 mr-1" />
                         New Post
                     </button>
-               
+                )}
             </div>
 
             {isLoading ? <p>Loading...</p> : posts.length === 0 ? (
@@ -135,26 +139,33 @@ export default function UpdatesTab({ chama, userRole }) {
             ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {posts.map(post => (
-                        <div key={post._id} className="bg-gray-50 border rounded-lg overflow-hidden flex flex-col">
+                        <Link key={post._id} href={`/chamas/${chama._id}/posts/${post._id}`} className="group bg-gray-50 border rounded-lg overflow-hidden flex flex-col hover:shadow-xl hover:border-blue-300 transition-all duration-300">
                             {post.imageUrl && <img src={post.imageUrl} alt={post.title} className="h-40 w-full object-cover"/>}
                             <div className="p-4 flex flex-col flex-grow">
                                 <div className="flex items-center text-sm text-gray-600 mb-2">
                                     {getCategoryIcon(post.category)}
                                     <span className="ml-2 font-semibold">{post.category}</span>
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 flex-grow">{post.title}</h3>
+                                <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{post.title}</h3>
                                 <p className="text-sm text-gray-500 mt-2">
                                     By {post.authorId.firstName} on {new Date(post.createdAt).toLocaleDateString()}
                                 </p>
                                 <p className="mt-2 text-gray-700 text-sm line-clamp-3 flex-grow">{post.content}</p>
-                                {canManage && (
-                                    <div className="flex space-x-2 mt-4 self-end">
-                                        <button onClick={() => openModal(post)} className="text-gray-500 hover:text-blue-600 p-1"><PencilIcon className="w-4 h-4"/></button>
-                                        <button onClick={() => handleDelete(post._id)} className="text-gray-500 hover:text-red-600 p-1"><TrashIcon className="w-4 h-4"/></button>
-                                    </div>
-                                )}
+                                
+                                <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+                                     <span className="text-blue-600 text-sm font-semibold flex items-center">
+                                        Read More
+                                        <ArrowTopRightOnSquareIcon className="w-4 h-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"/>
+                                    </span>
+                                    {canManage && (
+                                        <div className="flex space-x-2 z-10">
+                                            <button onClick={(e) => {e.preventDefault(); e.stopPropagation(); openModal(post)}} className="text-gray-500 hover:text-blue-600 p-1"><PencilIcon className="w-4 h-4"/></button>
+                                            <button onClick={(e) => handleDelete(e, post._id)} className="text-gray-500 hover:text-red-600 p-1"><TrashIcon className="w-4 h-4"/></button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             )}
@@ -164,20 +175,20 @@ export default function UpdatesTab({ chama, userRole }) {
                      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
                         <form onSubmit={handleSubmit}>
                             <div className="p-6">
-                                <h3 className="text-lg font-medium text-gray-900">{editingPost ? 'Edit' : 'Create'} Post</h3>
+                                <h3 className="text-lg font-medium">{editingPost ? 'Edit' : 'Create'} Post</h3>
                                 <div className="mt-4 space-y-4">
                                     <ImageUpload value={formData.imageUrl} onChange={url => setFormData({...formData, imageUrl: url})} />
-                                    <input type="text" placeholder="Title" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full text-gray-800 p-2 border rounded" required />
-                                    <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full p-2 text-gray-800 border rounded">
+                                    <input type="text" placeholder="Title" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-2 border rounded" required />
+                                    <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full p-2 border rounded">
                                         <option>General News</option>
                                         <option>Success Story</option>
                                         <option>Investment Update</option>
                                     </select>
-                                    <textarea placeholder="Content" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full p-2 text-gray-800 border rounded" rows="6" required></textarea>
+                                    <textarea placeholder="Content" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full p-2 border rounded" rows="6" required></textarea>
                                 </div>
                             </div>
                             <div className="bg-gray-50 px-6 py-3 flex justify-end space-x-2">
-                                <button type="button" onClick={closeModal} className="px-4 py-2 text-gray-800 border rounded-md">Cancel</button>
+                                <button type="button" onClick={closeModal} className="px-4 py-2 border rounded-md">Cancel</button>
                                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md">Save</button>
                             </div>
                         </form>
