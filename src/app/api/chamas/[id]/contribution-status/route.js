@@ -104,7 +104,7 @@ export async function GET(request, { params }) {
 
         // Get chama details
         const chama = await Chama.findById(chamaId).select(
-            'contributionAmount contributionFrequency name'
+            'contributionAmount contributionFrequency  name'
         );
         
         if (!chama) {

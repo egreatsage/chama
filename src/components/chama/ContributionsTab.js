@@ -115,6 +115,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
       }
       const data = await res.json();
       setStatusData(data);
+      console.log('Fetched contribution status:', data);
     } catch (error) {
       console.error('Failed to fetch contribution status:', error);
       setError(error.message);
@@ -232,7 +233,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
     const unpaid = statusData.memberStatuses.filter(m => m.status === 'Unpaid').length;
     const totalCollected = statusData.memberStatuses.reduce((sum, m) => sum + (m.paidAmount || 0), 0);
     const expectedTotal = statusData.memberStatuses.reduce((sum, m) => sum + (m.expectedAmount || 0), 0);
-    
+    console.log({ total, paid, unpaid, totalCollected, expectedTotal });
     return { total, paid, unpaid, totalCollected, expectedTotal };
   })() : null;
 
@@ -316,13 +317,13 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
             value={stats.unpaid}
             color="red"
           />
-          {/* <StatsCard 
+          <StatsCard 
             icon={CurrencyDollarIcon}
-            title="Total Collected"
+            title="Contribution Progress"
             value={formatCurrency(stats.totalCollected)}
             subtitle={`of ${formatCurrency(stats.expectedTotal)}`}
             color="blue"
-          /> */}
+          />
         </div>
       )}
     
