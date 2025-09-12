@@ -296,6 +296,18 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                 </div>
             </div>
         )}
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+                <div className="flex">
+                    <div className="flex-shrink-0">
+                        <InformationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                    </div>
+                    <div className="ml-3">
+                        <p className="text-sm text-red-700">
+                           NOTE, Amount in the contribution status table reflects payments made during the current period only.Loans,Expenses and Incomes affect the chama's overall balance but are not included in this table.
+                        </p>
+                    </div>
+                </div>
+            </div>
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard 
@@ -433,19 +445,53 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                   <h3 className="text-lg font-semibold text-gray-900">
                     {periodFrequency} Contribution Status
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {statusData ? (
-                      <>
-                        Period ending {new Date(statusData.period.end).toLocaleDateString('en-KE', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </>
-                    ) : (
-                      'Loading period information...'
-                    )}
-                  </p>
+                  <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
+  <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
+    {chama.operationType === 'equal_sharing' && chama.equalSharing?.savingStartDate ? (
+      <>
+        <div className="flex items-center gap-2">
+          <svg className="h-4 w-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5a2.25 2.25 0 0 0 2.25-2.25m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5a2.25 2.25 0 0 1 2.25 2.25v7.5" />
+          </svg>
+          <span className="font-semibold text-gray-700">Period:</span>
+        </div>
+        <div className="text-gray-600 ml-6 sm:ml-0">
+          <span className="bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm">
+            {new Date(chama.equalSharing.savingStartDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </span>
+          {chama.equalSharing.savingEndDate && (
+            <>
+              <span className="mx-2 text-gray-400">→</span>
+              <span className="bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm">
+                {new Date(chama.equalSharing.savingEndDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </span>
+            </>
+          )}
+        </div>
+      </>
+    ) : chama.operationType === 'rotation_payout' && chama.rotationPayout?.savingStartDate ? (
+      <>
+        <div className="flex items-center gap-2">
+          <svg className="h-4 w-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+          <span className="font-semibold text-gray-700">Started:</span>
+        </div>
+        <span className="bg-white px-3 py-1.5 rounded-md border border-gray-200 shadow-sm text-gray-600 ml-6 sm:ml-0">
+          {new Date(chama.rotationPayout.savingStartDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
+        </span>
+      </>
+    ) : (
+      <div className="flex items-center gap-2 text-gray-500">
+        <svg className="animate-spin h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span className="italic">Loading period information...</span>
+      </div>
+    )}
+  </div>
+                   </div>
                 </div>
 
                <div className='flex space-x-2'>
