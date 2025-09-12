@@ -893,7 +893,7 @@ export async function sendChamaRejectionEmail({ to, chamaName, rejectionReason }
   }
 }
 export async function sendChamaInvitationEmail({ to, inviterName, chamaName, invitationLink }) {
-  const subject = `🎉 You've been invited to join ${chamaName}!`;
+  const subject = `🎉 You're invited to join ${chamaName} on Chama App!`;
   
   const html = `
     <!DOCTYPE html>
@@ -939,6 +939,21 @@ export async function sendChamaInvitationEmail({ to, inviterName, chamaName, inv
             </div>
           </div>
           
+          <!-- Action Buttons -->
+          <div style="text-align: center; margin: 35px 0;">
+            <div style="margin-bottom: 15px;">
+              <a href="${invitationLink}" style="display: inline-block; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); margin-right: 10px;">
+                Accept Invitation ✨
+              </a>
+            </div>
+            <p style="color: #666; font-size: 14px; margin: 15px 0;">
+              Don't have an account yet? 
+              <a href="${process.env.NEXT_PUBLIC_APP_URL}/register" style="color: #007bff; text-decoration: none; font-weight: 600;">
+                Register for free →
+              </a>
+            </p>
+          </div>
+          
           <!-- Benefits Section -->
           <div style="background-color: #f0f8ff; border-left: 4px solid #007bff; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
             <h3 style="color: #007bff; margin: 0 0 15px 0; font-size: 18px;">Why join a Chama? 🤔</h3>
@@ -950,34 +965,6 @@ export async function sendChamaInvitationEmail({ to, inviterName, chamaName, inv
               <li>🔒 <strong>Secure Platform:</strong> Transparent tracking and secure transactions</li>
             </ul>
           </div>
-          
-          <!-- Action Buttons -->
-          <div style="text-align: center; margin: 35px 0;">
-            <div style="margin-bottom: 15px;">
-              <a href="${invitationLink || '#'}" style="display: inline-block; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); margin-right: 10px;">
-                Accept Invitation ✨
-              </a>
-            </div>
-            <p style="color: #666; font-size: 14px; margin: 15px 0;">
-              Don't have an account yet? 
-              <a href="#" style="color: #007bff; text-decoration: none; font-weight: 600;">
-                Register for free →
-              </a>
-            </p>
-          </div>
-          
-          <!-- Personal Touch -->
-          <div style="background-color: #fff9e6; padding: 20px; border-radius: 8px; border: 1px solid #ffeaa7; margin: 25px 0;">
-            <p style="color: #333; margin: 0; font-size: 15px; line-height: 1.6; text-align: center; font-style: italic;">
-              💭 "${inviterName} thought you'd be a great addition to their savings community. 
-              Join them on this exciting financial journey!"
-            </p>
-          </div>
-          
-          <p style="color: #666; font-size: 14px; line-height: 1.6; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-            This invitation was sent to you because <strong>${inviterName}</strong> believes you'd be a valuable member of their Chama. 
-            If you have any questions about joining or using our platform, our support team is ready to help!
-          </p>
           
           <p style="color: #333; font-size: 16px; line-height: 1.6; margin-top: 25px;">
             Welcome to the community! 🌟<br>
@@ -1015,6 +1002,97 @@ export async function sendChamaInvitationEmail({ to, inviterName, chamaName, inv
     return { success: true, message: 'Invitation email sent successfully' };
   } catch (error) {
     console.error(`❌ Failed to send invitation email to ${to} for Chama: ${chamaName}`, error);
+    throw new Error(`Email delivery failed: ${error.message}`);
+  }
+}
+export async function sendChamaAdditionEmail({ to, inviterName, chamaName, memberName }) {
+  const subject = `✅ You've been added to ${chamaName}!`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Added to Chama</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 40px 20px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
+            ✅ Welcome to the Group!
+          </h1>
+          <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
+            You're now part of the savings journey
+          </p>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 40px 30px;">
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            Hello ${memberName}! 👋
+          </p>
+          
+          <div style="background: linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border: 1px solid #dee2e6;">
+            <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0; text-align: center;">
+              <strong style="color: #393B65; font-size: 18px;">${inviterName}</strong> has added you to their savings group
+            </p>
+            <div style="text-align: center; margin: 20px 0;">
+              <span style="display: inline-block; background: linear-gradient(135deg, #393B65 0%, #2D2F4F 100%); color: #ffffff; padding: 12px 25px; border-radius: 8px; font-weight: 700; font-size: 20px; letter-spacing: 1px;">
+                "${chamaName}"
+              </span>
+            </div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div style="text-align: center; margin: 35px 0;">
+            <div style="margin-bottom: 15px;">
+              <a href="${process.env.NEXT_PUBLIC_APP_URL}/login" style="display: inline-block; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
+                Login to Get Started ✨
+              </a>
+            </div>
+          </div>
+          
+          <div style="background-color: #e6f3ff; padding: 20px; border-radius: 8px; border: 1px solid #b3d9ff; margin: 25px 0;">
+            <p style="color: #333; margin: 0; font-size: 15px; line-height: 1.6; text-align: center;">
+              💡 <strong>What's next?</strong><br>
+              Login to your Chama App account to start participating in group savings, track contributions, and connect with your fellow members.
+            </p>
+          </div>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6; margin-top: 25px;">
+            Welcome to the community! 🌟<br>
+            <strong style="color: #393B65;">The Chama App Team</strong>
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #eee;">
+          <p style="color: #888; font-size: 12px; margin: 0 0 10px 0; line-height: 1.5;">
+            © 2025 Chama App. Building stronger communities through savings.
+          </p>
+        </div>
+        
+      </div>
+    </body>
+    </html>
+  `;
+
+  const mailOptions = {
+    from: `"Chama App" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Addition notification sent successfully to ${to} for Chama: ${chamaName} (added by ${inviterName})`);
+    return { success: true, message: 'Addition notification sent successfully' };
+  } catch (error) {
+    console.error(`❌ Failed to send addition notification to ${to} for Chama: ${chamaName}`, error);
     throw new Error(`Email delivery failed: ${error.message}`);
   }
 }

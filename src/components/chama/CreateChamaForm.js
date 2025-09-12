@@ -24,6 +24,39 @@ const Step1_BasicInfo = ({ formData, handleChange }) => (
           required 
         />
       </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">Chama Type *</label>
+        <div className="space-y-4">
+          {[
+            { value: 'equal_sharing', label: 'Equal Sharing', desc: 'Members save towards a common goal and share equally' },
+            { value: 'rotation_payout', label: 'Rotation Payout', desc: 'Members take turns receiving the collected funds (Merry-Go-Round)' },
+          ].map((option) => (
+            <label key={option.value} className={`block p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+              formData.operationType === option.value 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-200'
+            }`}>
+              <div className="flex items-start space-x-3">
+                <input
+                  type="radio"
+                  name="operationType"
+                  value={option.value}
+                  checked={formData.operationType === option.value}
+                  onChange={handleChange}
+                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                  required
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">{option.label}</div>
+                  <div className="text-sm text-gray-600 mt-1">{option.desc}</div>
+                </div>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
       <div>
         <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
           Description
@@ -42,45 +75,44 @@ const Step1_BasicInfo = ({ formData, handleChange }) => (
   </div>
 );
 
-const Step2_OperationType = ({ formData, handleChange }) => (
-  <div>
-    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Choose Chama Type</h2>
-    <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-      Select how your Chama will operate. This determines how funds are collected and distributed among members.
-    </p>
-    
-    <div className="space-y-4">
-      {[
-        { value: 'equal_sharing', label: 'Equal Sharing', desc: 'Members save towards a common goal and share equally' },
-        { value: 'rotation_payout', label: 'Rotation Payout', desc: 'Members take turns receiving the collected funds (Merry-Go-Round)' },
-        
-      ].map((option) => (
-        <label key={option.value} className={`block p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-          formData.operationType === option.value 
-            ? 'border-blue-500 bg-blue-50' 
-            : 'border-gray-200'
-        }`}>
-          <div className="flex items-start space-x-3">
-            <input
-              type="radio"
-              name="operationType"
-              value={option.value}
-              checked={formData.operationType === option.value}
-              onChange={handleChange}
-              className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500"
+const Step2_Configuration = ({ formData, handleChange, handleConfigChange }) => {
+  
+  const commonFields = (
+      <div className="space-y-6">
+       
+        <div>
+          <label htmlFor="contributionFrequency" className="block text-sm font-semibold text-gray-700 mb-2">
+            Contribution Frequency
+          </label>
+          <select 
+            name="contributionFrequency" 
+            id="contributionFrequency" 
+            value={formData.contributionFrequency} 
+            onChange={handleChange} 
+            className="w-full px-4 py-3 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
+          >
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+          </select>
+        </div>
+        <div>
+            <label htmlFor="savingStartDate" className="block text-sm font-semibold text-gray-700 mb-2">
+              Saving Start Date
+            </label>
+            <input 
+              type="date" 
+              name="savingStartDate" 
+              id="savingStartDate" 
+              value={formData.typeSpecificConfig.savingStartDate || ''} 
+              onChange={handleConfigChange} 
+              className="w-full px-4 py-3 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base" 
             />
-            <div className="flex-1">
-              <div className="font-medium text-gray-900">{option.label}</div>
-              <div className="text-sm text-gray-600 mt-1">{option.desc}</div>
-            </div>
           </div>
-        </label>
-      ))}
-    </div>
-  </div>
-);
+      </div>
+  )
 
-const Step3_Configuration = ({ formData, handleChange, handleConfigChange }) => {
   const renderConfigFields = () => {
     switch (formData.operationType) {
       case 'equal_sharing':
@@ -118,16 +150,16 @@ const Step3_Configuration = ({ formData, handleChange, handleConfigChange }) => 
         );
       case 'rotation_payout':
         return (
-          <div className="space-y-6">
+            <div className="space-y-6">
             <div>
-              <label htmlFor="payoutAmount" className="block text-sm font-semibold text-gray-700 mb-2">
-                Payout Amount per Member (KES) *
+              <label htmlFor="targetAmount" className="block text-sm font-semibold text-gray-700 mb-2">
+                Target Amount (KES) *
               </label>
               <input 
                 type="number" 
-                name="payoutAmount" 
-                id="payoutAmount" 
-                value={formData.typeSpecificConfig.payoutAmount || ''} 
+                name="targetAmount" 
+                id="targetAmount" 
+                value={formData.typeSpecificConfig.targetAmount || ''} 
                 onChange={handleConfigChange} 
                 className="w-full px-4 py-3 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base" 
                 placeholder="e.g., 5,000"
@@ -136,23 +168,20 @@ const Step3_Configuration = ({ formData, handleChange, handleConfigChange }) => 
               />
             </div>
             <div>
-              <label htmlFor="payoutFrequency" className="block text-sm font-semibold text-gray-700 mb-2">
-                Payout Frequency
+              <label htmlFor="savingEndDate" className="block text-sm font-semibold text-gray-700 mb-2">
+                Saving End Date
               </label>
-              <select 
-                name="payoutFrequency" 
-                id="payoutFrequency" 
-                value={formData.typeSpecificConfig.payoutFrequency || 'monthly'} 
+              <input 
+                type="date" 
+                name="savingEndDate" 
+                id="savingEndDate" 
+                value={formData.typeSpecificConfig.savingEndDate || ''} 
                 onChange={handleConfigChange} 
-                className="w-full px-4 py-3 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
-              >
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
+                className="w-full px-4 py-3 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base" 
+              />
             </div>
           </div>
         );
-      
       default:
         return null;
     }
@@ -162,44 +191,10 @@ const Step3_Configuration = ({ formData, handleChange, handleConfigChange }) => 
     <div>
       <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Financial Configuration</h2>
       
-      {/* Base Configuration */}
       <div className="space-y-6 mb-8">
-        <div>
-          <label htmlFor="contributionAmount" className="block text-sm font-semibold text-gray-700 mb-2">
-            Contribution Amount Per Member (KES) *
-          </label>
-          <input 
-            type="number" 
-            name="contributionAmount" 
-            id="contributionAmount" 
-            value={formData.contributionAmount} 
-            onChange={handleChange} 
-            className="w-full px-4 py-3 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base" 
-            placeholder="e.g., 1,000"
-            required 
-            min="1" 
-          />
-        </div>
-        <div>
-          <label htmlFor="contributionFrequency" className="block text-sm font-semibold text-gray-700 mb-2">
-            Contribution Frequency
-          </label>
-          <select 
-            name="contributionFrequency" 
-            id="contributionFrequency" 
-            value={formData.contributionFrequency} 
-            onChange={handleChange} 
-            className="w-full px-4 py-3 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-          </select>
-        </div>
+        {commonFields}
       </div>
       
-      {/* Type-Specific Configuration */}
       <div className="border-t border-gray-200 pt-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Type-Specific Settings</h3>
         {renderConfigFields()}
@@ -208,11 +203,10 @@ const Step3_Configuration = ({ formData, handleChange, handleConfigChange }) => 
   );
 };
 
-// --- Progress Indicator Component ---
 const ProgressIndicator = ({ currentStep }) => (
   <div className="mb-8">
     <div className="flex items-center justify-center space-x-2 sm:space-x-4">
-      {[1, 2, 3].map((stepNum) => (
+      {[1, 2].map((stepNum) => (
         <div key={stepNum} className="flex items-center">
           <div className={`
             w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-colors
@@ -223,7 +217,7 @@ const ProgressIndicator = ({ currentStep }) => (
           `}>
             {stepNum}
           </div>
-          {stepNum < 3 && (
+          {stepNum < 2 && (
             <div className={`
               w-8 sm:w-12 h-1 mx-2 transition-colors
               ${stepNum < currentStep ? 'bg-blue-600' : 'bg-gray-200'}
@@ -234,7 +228,7 @@ const ProgressIndicator = ({ currentStep }) => (
     </div>
     <div className="flex justify-center mt-3">
       <span className="text-sm text-gray-600">
-        Step {currentStep} of 3
+        Step {currentStep} of 2
       </span>
     </div>
   </div>
@@ -248,9 +242,10 @@ export default function CreateChamaForm() {
     name: '',
     description: '',
     operationType: 'equal_sharing',
-    contributionAmount: '',
     contributionFrequency: 'monthly',
-    typeSpecificConfig: {},
+    typeSpecificConfig: {
+        savingStartDate: new Date().toISOString().split('T')[0] // Default to today
+    },
   });
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -300,7 +295,6 @@ export default function CreateChamaForm() {
       <Toaster position="top-center" />
       
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             Create a New Chama
@@ -310,20 +304,15 @@ export default function CreateChamaForm() {
           </p>
         </div>
 
-        {/* Progress Indicator */}
         <ProgressIndicator currentStep={step} />
 
-        {/* Form Card */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="p-6 sm:p-8">
-            {/* Form Content */}
             <div className="min-h-[400px]">
               {step === 1 && <Step1_BasicInfo formData={formData} handleChange={handleChange} />}
-              {step === 2 && <Step2_OperationType formData={formData} handleChange={handleChange} />}
-              {step === 3 && <Step3_Configuration formData={formData} handleChange={handleChange} handleConfigChange={handleConfigChange} />}
+              {step === 2 && <Step2_Configuration formData={formData} handleChange={handleChange} handleConfigChange={handleConfigChange} />}
             </div>
             
-            {/* Navigation Buttons */}
             <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-8 pt-6 border-t border-gray-200">
               <div className="order-2 sm:order-1">
                 {step > 1 && (
@@ -337,7 +326,7 @@ export default function CreateChamaForm() {
               </div>
               
               <div className="order-1 sm:order-2">
-                {step < 3 ? (
+                {step < 2 ? (
                   <button 
                     onClick={nextStep} 
                     className="w-full sm:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -365,7 +354,6 @@ export default function CreateChamaForm() {
           </div>
         </div>
 
-        {/* Help Text */}
         <div className="text-center mt-6">
           <p className="text-xs sm:text-sm text-gray-500">
             Need help? Contact our support team for assistance with setting up your Chama.

@@ -113,20 +113,22 @@ const ChamaCard = ({ chama }) => {
         )}
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <div className="text-sm text-gray-500">
-            <span className="font-medium">KES {chama.contributionAmount?.toLocaleString() || 'N/A'}</span>
-            <span className="mx-1">•</span>
-            <span className="capitalize">{chama.contributionFrequency}</span>
-          </div>
+         
+          {['active', 'approved'].includes(chama.status) ? (
+            <Link href={`/chamas/${chama._id}`}>
+              <button className="inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">
+                View Details
+                <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </Link>
+          ) : (
+            <div>
+              <p className="text-sm text-red-600">Chama not approved</p>
+            </div>
+          )}
           
-          <Link href={`/chamas/${chama._id}`}>
-            <button className="inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">
-              View Details
-              <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </Link>
         </div>
       </div>
     </div>

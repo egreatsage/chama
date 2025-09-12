@@ -4,7 +4,7 @@ import User from '@/models/User';
 import Chama from "@/models/Chama";
 import ChamaMember from "@/models/ChamaMember";
 import { getServerSideUser } from '@/lib/auth';
-import { sendChamaInvitationEmail } from '@/lib/email';
+import { sendChamaAdditionEmail, sendChamaInvitationEmail } from '@/lib/email';
 
 // GET: Fetch all members of a specific Chama
 export async function GET(request, { params }) {
@@ -38,6 +38,7 @@ export async function GET(request, { params }) {
 }
 
 // POST: Invite a new member to the Chama
+// Updated POST function in the API route
 export async function POST(request, { params }) {
     await connectDB();
     try {
@@ -46,49 +47,73 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
         
-        const { id } =await params; // Chama ID
-        const { email } = await request.json();
+        const { id } = await params; // Chama ID
+        const { email, action } = await request.json(); // action can be 'add' or 'invite'
 
         if (!email) {
-            return NextResponse.json({ error: "Email is required to invite a member." }, { status: 400 });
+            return NextResponse.json({ error: "Email is required." }, { status: 400 });
         }
 
         const membership = await ChamaMember.findOne({ userId: inviter.id, chamaId: id });
         if (!membership || membership.role !== 'chairperson') {
-            return NextResponse.json({ error: "Only the chairperson can invite new members." }, { status: 403 });
+            return NextResponse.json({ error: "Only the chairperson can add or invite members." }, { status: 403 });
         }
-
-        const userToInvite = await User.findOne({ email });
-        if (!userToInvite) {
-            return NextResponse.json({ error: `A user with the email "${email}" was not found.` }, { status: 404 });
-        }
-
-        const existingMember = await ChamaMember.findOne({ userId: userToInvite._id, chamaId: id });
-        if (existingMember) {
-            return NextResponse.json({ error: "This user is already a member of this Chama." }, { status: 409 });
-        }
-
-        const newMember = await ChamaMember.create({
-            chamaId: id,
-            userId: userToInvite._id,
-            role: 'member',
-        });
 
         const chama = await Chama.findById(id);
-        try {
-            await sendChamaInvitationEmail({
-                to: userToInvite.email,
-                inviterName: inviter.firstName,
-                chamaName: chama.name,
+
+        if (action === 'invite') {
+            // Send invitation email only - don't add to database yet
+            try {
+                await sendChamaInvitationEmail({
+                    to: email,
+                    inviterName: inviter.firstName,
+                    chamaName: chama.name,
+                    invitationLink: `${process.env.NEXT_PUBLIC_APP_URL}/login?redirect=/chamas/${id}&invite=true`
+                });
+                return NextResponse.json({ 
+                    message: `Invitation sent successfully to ${email}.` 
+                }, { status: 200 });
+            } catch (emailError) {
+                console.error("Failed to send invitation email:", emailError);
+                return NextResponse.json({ error: "Failed to send invitation email." }, { status: 500 });
+            }
+        } else {
+            // Original "add member" logic - add existing user directly
+            const userToAdd = await User.findOne({ email });
+            if (!userToAdd) {
+                return NextResponse.json({ error: `A user with the email "${email}" was not found. Use "Invite Member" instead to send them an invitation.` }, { status: 404 });
+            }
+
+            const existingMember = await ChamaMember.findOne({ userId: userToAdd._id, chamaId: id });
+            if (existingMember) {
+                return NextResponse.json({ error: "This user is already a member of this Chama." }, { status: 409 });
+            }
+
+            const newMember = await ChamaMember.create({
+                chamaId: id,
+                userId: userToAdd._id,
+                role: 'member',
             });
-        } catch (emailError) {
-            console.error("Invitation was created, but failed to send email:", emailError);
+
+            try {
+                await sendChamaAdditionEmail({
+                    to: userToAdd.email,
+                    inviterName: inviter.firstName,
+                    chamaName: chama.name,
+                    memberName: userToAdd.firstName
+                });
+            } catch (emailError) {
+                console.error("Member was added, but failed to send notification email:", emailError);
+            }
+
+            return NextResponse.json({ 
+                message: `${userToAdd.firstName} has been added successfully.`, 
+                member: newMember 
+            }, { status: 201 });
         }
 
-        return NextResponse.json({ message: `${userToInvite.firstName} has been invited successfully.`, member: newMember }, { status: 201 });
-
     } catch (error) {
-        console.error("Failed to invite member:", error);
+        console.error("Failed to process request:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

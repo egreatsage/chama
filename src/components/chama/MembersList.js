@@ -15,10 +15,15 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function MembersList({ members, chama, onActionComplete }) {
+    // const [showInviteModal, setShowInviteModal] = useState(false);
+    const [showAddMemberModal, setShowAddMemberModal] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
+    const [addMemberEmail, setAddMemberEmail] = useState('');
     const [inviteEmail, setInviteEmail] = useState('');
+    const [isAddingMember, setIsAddingMember] = useState(false);
     const [isInviting, setIsInviting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    
 
     const filteredMembers = useMemo(() => {
         if (!searchQuery.trim()) return members;
@@ -34,23 +39,44 @@ export default function MembersList({ members, chama, onActionComplete }) {
                    role.includes(query);
         });
     }, [members, searchQuery]);
-
-    const handleInvite = async (e) => {
+        const handleAddMember = async (e) => {
         e.preventDefault();
-        setIsInviting(true);
-        const toastId = toast.loading('Sending invite...');
+        setIsAddingMember(true);
+        const toastId = toast.loading('Adding member...');
         try {
             const res = await fetch(`/api/chamas/${chama._id}/members`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: inviteEmail }),
+                body: JSON.stringify({ email: addMemberEmail, action: 'add' }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            toast.success(data.message, { id: toastId });
+            setShowAddMemberModal(false);
+            setAddMemberEmail('');
+            onActionComplete();
+        } catch (err) {
+            toast.error(err.message, { id: toastId });
+        } finally {
+            setIsAddingMember(false);
+        }
+    };
+
+    const handleInvite = async (e) => {
+        e.preventDefault();
+        setIsInviting(true);
+        const toastId = toast.loading('Sending invitation...');
+        try {
+            const res = await fetch(`/api/chamas/${chama._id}/members`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: inviteEmail, action: 'invite' }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             toast.success(data.message, { id: toastId });
             setShowInviteModal(false);
             setInviteEmail('');
-            onActionComplete();
         } catch (err) {
             toast.error(err.message, { id: toastId });
         } finally {
@@ -148,14 +174,24 @@ export default function MembersList({ members, chama, onActionComplete }) {
                             Download PDF
                         </button>
                         {chama.userRole === 'chairperson' && (
+                            <>
                             <button
-                                onClick={() => setShowInviteModal(true)}
-                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                            >
-                                <UserPlusIcon className="h-4 w-4 mr-2" />
-                                <span className="hidden sm:inline">Invite Member</span>
-                                <span className="sm:hidden">Invite</span>
-                            </button>
+                                    onClick={() => setShowAddMemberModal(true)}
+                                    className="inline-flex cursor-pointer items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                                >
+                                    <UserPlusIcon className="h-4 w-4 mr-2" />
+                                    <span className="hidden sm:inline">Add Member</span>
+                                    <span className="sm:hidden">Add</span>
+                                </button>
+                                <button
+                                    onClick={() => setShowInviteModal(true)}
+                                    className="inline-flex cursor-pointer items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                                >
+                                    <UserPlusIcon className="h-4 w-4 mr-2" />
+                                    <span className="hidden sm:inline">Invite Member</span>
+                                    <span className="sm:hidden">Invite</span>
+                                </button>
+                            </>
                         )}
                     </div>
                 </div>
@@ -281,12 +317,70 @@ export default function MembersList({ members, chama, onActionComplete }) {
             </div>
 
             {/* Invite Modal */}
+            {showAddMemberModal && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-medium text-gray-900">Add Existing Member</h3>
+                                <button
+                                    onClick={() => setShowAddMemberModal(false)}
+                                    className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                                >
+                                    <XMarkIcon className="h-6 w-6" />
+                                </button>
+                            </div>
+
+                            <p className="text-sm text-green-600 text-center font-semibold mb-4 bg-green-100 border border-green-200 p-3 rounded">
+                                Add someone who already has a Chama App account to this group.If they don't have an account,
+                                 use "Invite Member" instead to send them an invitation or Ask them to sign up first.
+                            </p>
+
+                            <form onSubmit={handleAddMember} className="space-y-4">
+                                <div>
+                                    <label htmlFor="add-member-email" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Email Address
+                                    </label>
+                                    <input
+                                        id="add-member-email"
+                                        type="email"
+                                        value={addMemberEmail}
+                                        onChange={(e) => setAddMemberEmail(e.target.value)}
+                                        placeholder="existing-user@example.com"
+                                        className="w-full px-3 py-2 text-gray-800 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 space-y-2 space-y-reverse sm:space-y-0 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddMemberModal(false)}
+                                        className="w-full cursor-pointer sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isAddingMember}
+                                        className="w-full sm:w-auto cursor-pointer inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        {isAddingMember ? 'Adding...' : 'Add Member'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+                        {/* Invite Member Modal */}
             {showInviteModal && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-medium text-gray-900">Invite a New Member</h3>
+                                <h3 className="text-lg font-medium text-gray-900">Invite New Member</h3>
                                 <button
                                     onClick={() => setShowInviteModal(false)}
                                     className="text-gray-400 hover:text-gray-500 focus:outline-none"
@@ -294,6 +388,10 @@ export default function MembersList({ members, chama, onActionComplete }) {
                                     <XMarkIcon className="h-6 w-6" />
                                 </button>
                             </div>
+
+                              <p className="text-sm text-green-600 text-center font-semibold mb-4 bg-green-100 border border-green-200 p-3 rounded">
+                                Send an email invitation to someone to join this Chama. They'll need to create an account if they don't have one.
+                            </p>
 
                             <form onSubmit={handleInvite} className="space-y-4">
                                 <div>
@@ -305,8 +403,8 @@ export default function MembersList({ members, chama, onActionComplete }) {
                                         type="email"
                                         value={inviteEmail}
                                         onChange={(e) => setInviteEmail(e.target.value)}
-                                        placeholder="member@example.com"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        placeholder="newmember@example.com"
+                                        className="w-full px-3 text-gray-800 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                         required
                                     />
                                 </div>
@@ -315,16 +413,16 @@ export default function MembersList({ members, chama, onActionComplete }) {
                                     <button
                                         type="button"
                                         onClick={() => setShowInviteModal(false)}
-                                        className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                                        className="w-full cursor-pointer sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isInviting}
-                                        className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="w-full cursor-pointer sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
-                                        {isInviting ? 'Sending...' : 'Send Invite'}
+                                        {isInviting ? 'Sending...' : 'Send Invitation'}
                                     </button>
                                 </div>
                             </form>
@@ -332,6 +430,7 @@ export default function MembersList({ members, chama, onActionComplete }) {
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

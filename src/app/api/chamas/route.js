@@ -14,34 +14,37 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, description, operationType, contributionAmount, contributionFrequency, typeSpecificConfig } = body;
+    const { name, description, operationType, contributionFrequency, typeSpecificConfig } = body;
     
     if (!name || !operationType) {
       return NextResponse.json({ error: "Chama Name and Operation Type are required." }, { status: 400 });
     }
 
-    // Prepare the data for the new Chama
     const chamaData = {
       name,
       description,
       createdBy: user.id,
       operationType,
-      contributionAmount: Number(contributionAmount) || 0,
       contributionFrequency: contributionFrequency || 'monthly',
       status: 'pending',
     };
 
-    // --- FIX: Manually map operationType to the correct schema field ---
-    // This ensures the data is saved under the correct key (e.g., 'equalSharing')
     if (operationType === 'equal_sharing') {
-      chamaData.equalSharing = typeSpecificConfig;
+      chamaData.equalSharing = {
+          targetAmount: typeSpecificConfig.targetAmount,
+          savingStartDate: typeSpecificConfig.savingStartDate,
+          savingEndDate: typeSpecificConfig.savingEndDate,
+      };
     } else if (operationType === 'rotation_payout') {
-      chamaData.rotationPayout = typeSpecificConfig;
+      chamaData.rotationPayout = {
+          payoutAmount: typeSpecificConfig.payoutAmount, // Or calculate based on contributionAmount * members
+          savingStartDate: typeSpecificConfig.savingStartDate,
+          payoutFrequency: contributionFrequency, // Using contributionFrequency as payoutFrequency
+      };
     } 
 
     const newChama = await Chama.create(chamaData);
 
-    // Automatically make the creator the chairperson
     await ChamaMember.create({
         chamaId: newChama._id,
         userId: user.id,
@@ -49,7 +52,6 @@ export async function POST(request) {
         status: 'active'
     });
 
-    // Automatically create a default rules document for the new Chama
     await ChamaRules.create({
         chamaId: newChama._id,
     });
