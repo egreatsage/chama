@@ -41,7 +41,8 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
   const currentBalance = chama.currentBalance || 0;
   const progress = targetAmount > 0 ? (currentBalance / targetAmount) * 100 : 0;
   const isGoalReached = currentBalance >= targetAmount && targetAmount > 0;
-  
+  console.log('Chama Data:', currentBalance);
+
   const formattedEndDate = savingEndDate
     ? new Date(savingEndDate).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -61,7 +62,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         toast.success('Funds distributed successfully!', { id: toastId });
-        onDataUpdate(); // This will trigger a full refetch on the parent page
+        onDataUpdate();
     } catch (error) {
         toast.error(error.message, { id: toastId });
     } finally {
@@ -77,7 +78,6 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
 
     const excelData = [];
     cycles.forEach((cycle, index) => {
-        // Add a summary row for the cycle
         excelData.push({
             'Type': `Cycle #${cycles.length - index} Summary`,
             'Date': new Date(cycle.endDate).toLocaleDateString(),
@@ -85,7 +85,6 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
             'Amount': cycle.totalCollected,
         });
 
-        // Add detailed rows for each payout in the cycle
         cycle.payouts.forEach(payout => {
             excelData.push({
                 'Type': 'Payout',
@@ -95,7 +94,6 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
             });
         });
 
-        // Add a separator row
         excelData.push({});
     });
 
@@ -103,10 +101,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
     const worksheet = XLSX.utils.json_to_sheet(excelData);
 
     worksheet['!cols'] = [
-        { wch: 25 }, // Type
-        { wch: 15 }, // Date
-        { wch: 25 }, // Recipient/Item
-        { wch: 15 }, // Amount
+        { wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 15 },
     ];
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Payout History');
@@ -114,7 +109,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
     const currentDate = new Date().toISOString().split('T')[0];
     const filename = `${chama.name}_equal_sharing_history_${currentDate}.xlsx`;
     XLSX.writeFile(workbook, filename);
-};
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 p-1 sm:p-6 lg:p-8">
@@ -238,7 +233,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
           )}
         </div>
 
-        {/* Payout History Section */}
+        {/* Payout History Section - Tabular Format */}
         <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-6 sm:p-8 border border-white/20">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Payout History</h2>
@@ -263,76 +258,116 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
               <p className="text-gray-400 text-sm mt-2">Your distribution history will appear here once cycles are completed.</p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {cycles.map((cycle, index) => (
-                <div key={cycle._id} className="bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
+                <div key={cycle._id} className="border border-gray-200 rounded-xl overflow-hidden">
                   {/* Cycle Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 pb-4 mb-6">
-                    <div className="flex items-center mb-2 sm:mb-0">
-                      <div className="bg-blue-100 rounded-full p-2 mr-3">
-                        <Calendar className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-lg text-gray-800">
-                          Cycle #{cycles.length - index}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          Completed: {new Date(cycle.endDate).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500 mb-1">Total Distributed</p>
-                      <span className="text-2xl font-bold text-green-600">{formatCurrency(cycle.totalCollected)}</span>
-                    </div>
-                  </div>
-
-                  {/* Distribution Info */}
-                  <div className="bg-blue-50 rounded-lg p-4 mb-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Users className="h-5 w-5 text-blue-600 mr-2" />
-                        <span className="text-sm font-medium text-blue-800">
-                          {cycle.payouts.length} members received
-                        </span>
-                      </div>
-                      <span className="text-lg font-bold text-blue-700">
-                        {formatCurrency(cycle.payouts[0]?.amount)} each
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Member Payouts */}
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Member Distributions</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {cycle.payouts.map(payout => (
-                        <div key={payout.userId._id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
-                          <div className="flex items-center min-w-0 flex-1">
-                            <div className="relative">
-                              <img 
-                                src={payout.userId.photoUrl || `https://ui-avatars.com/api/?name=${payout.userId.firstName}+${payout.userId.lastName}&background=3b82f6&color=fff`} 
-                                alt="" 
-                                className="h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm"
-                              />
-                              <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white"></div>
-                            </div>
-                            <div className="ml-3 min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-gray-800 truncate">
-                                {payout.userId.firstName} {payout.userId.lastName}
-                              </p>
-                              <p className="text-xs text-gray-500">Member</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-sm font-bold text-green-600">{formatCurrency(payout.amount)}</span>
-                          </div>
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center mb-2 sm:mb-0">
+                        <div className="bg-blue-100 rounded-full p-2 mr-3">
+                          <Calendar className="h-5 w-5 text-blue-600" />
                         </div>
-                      ))}
+                        <div>
+                          <h3 className="font-bold text-lg text-gray-800">
+                            Cycle #{cycles.length - index}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            Completed: {new Date(cycle.endDate).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-sm text-gray-500">Total Distributed</p>
+                          <span className="text-xl font-bold text-green-600">{formatCurrency(cycle.totalCollected)}</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-500">Per Member</p>
+                          <span className="text-xl font-bold text-blue-600">{formatCurrency(cycle.payouts[0]?.amount)}</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-500">Members</p>
+                          <span className="text-xl font-bold text-purple-600">{cycle.payouts.length}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tabular Data */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            #
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Member
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount Received
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {cycle.payouts.map((payout, payoutIndex) => (
+                          <tr key={payout.userId._id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {payoutIndex + 1}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  <img 
+                                    className="h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm" 
+                                    src={payout.userId.photoUrl || `https://ui-avatars.com/api/?name=${payout.userId.firstName}+${payout.userId.lastName}&background=3b82f6&color=fff`}
+                                    alt=""
+                                  />
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {payout.userId.firstName} {payout.userId.lastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    Member
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-bold text-green-600">
+                                {formatCurrency(payout.amount)}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <div className="h-1.5 w-1.5 bg-green-400 rounded-full mr-1.5"></div>
+                                Completed
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Cycle Summary Footer */}
+                  <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">
+                        Distribution completed on {new Date(cycle.endDate).toLocaleDateString()}
+                      </span>
+                      <span className="font-medium text-gray-800">
+                        {cycle.payouts.length} members • {formatCurrency(cycle.totalCollected)} total
+                      </span>
                     </div>
                   </div>
                 </div>

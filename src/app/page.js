@@ -98,10 +98,7 @@ export default function ChamaHomepage() {
                 and growing wealth together. Join thousands of successful chamas across Kenya.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all flex items-center justify-center group">
-                  Start Your Chama
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
+                
                
               </div>
               <div className="mt-8 flex items-center justify-center lg:justify-start space-x-6">
