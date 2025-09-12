@@ -12,7 +12,8 @@ import {
   CalendarIcon,
   ArrowPathIcon,
   DocumentArrowDownIcon,
-  TagIcon // Added TagIcon icon
+  TagIcon, // Added TagIcon icon
+  InformationCircleIcon
 } from '@heroicons/react/24/solid';
 
 const formatCurrency = (amount) => {
@@ -279,6 +280,22 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
   // **MODIFIED a little bit to show the TagIcon amount for equal sharing chamas**
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {chama.operationType === 'equal_sharing' && (
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+                <div className="flex">
+                    <div className="flex-shrink-0">
+                        <InformationCircleIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
+                    </div>
+                    <div className="ml-3">
+                        <p className="text-sm text-blue-700">
+                            Each member's total contribution goal is approximately{' '}
+                            <span className="font-bold">{formatCurrency((chama.equalSharing.targetAmount || 0) / (members.length || 1))}</span>
+                            , calculated as (Target Amount / Number of Members).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        )}
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard 
