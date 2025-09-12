@@ -11,7 +11,8 @@ import {
   UsersIcon,
   CalendarIcon,
   ArrowPathIcon,
-  DocumentArrowDownIcon
+  DocumentArrowDownIcon,
+  TagIcon // Added TagIcon icon
 } from '@heroicons/react/24/solid';
 
 const formatCurrency = (amount) => {
@@ -28,10 +29,8 @@ const formatCurrency = (amount) => {
 };
 
 const formatPhoneNumber = (phone) => {
-  // Remove all non-digits
   const digits = phone.replace(/\D/g, '');
   
-  // Handle Kenyan numbers
   if (digits.startsWith('254')) {
     return digits;
   } else if (digits.startsWith('0')) {
@@ -69,7 +68,8 @@ const StatsCard = ({ icon: Icon, title, value, subtitle, color = 'blue' }) => {
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
-    red: 'bg-red-50 text-red-600'
+    red: 'bg-red-50 text-red-600',
+    purple: 'bg-purple-50 text-purple-600' // Added color for TagIcon
   };
 
   return (
@@ -93,7 +93,6 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [error, setError] = useState(null);
   
-  // Form states
   const [mpesaAmount, setMpesaAmount] = useState('');
   const [mpesaPhone, setMpesaPhone] = useState('');
   const [isPaying, setIsPaying] = useState(false);
@@ -115,7 +114,6 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
       }
       const data = await res.json();
       setStatusData(data);
-      console.log('Fetched contribution status:', data);
     } catch (error) {
       console.error('Failed to fetch contribution status:', error);
       setError(error.message);
@@ -174,7 +172,6 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
       setMpesaAmount('');
       setMpesaPhone('');
       
-      // Refresh status after delay to allow for payment processing
       setTimeout(fetchContributionStatus, 25000);
     } catch (error) {
       console.error('M-Pesa payment error:', error);
@@ -226,15 +223,10 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
     }
   };
 
-  // Calculate statistics
   const stats = statusData ? (() => {
     const total = statusData.memberStatuses.length;
     const paid = statusData.memberStatuses.filter(m => m.status === 'Paid').length;
-    const unpaid = statusData.memberStatuses.filter(m => m.status === 'Unpaid').length;
-    const totalCollected = statusData.memberStatuses.reduce((sum, m) => sum + (m.paidAmount || 0), 0);
-    const expectedTotal = statusData.memberStatuses.reduce((sum, m) => sum + (m.expectedAmount || 0), 0);
-    console.log({ total, paid, unpaid, totalCollected, expectedTotal });
-    return { total, paid, unpaid, totalCollected, expectedTotal };
+    return { total, paid };
   })() : null;
 
   const periodFrequency = statusData?.period?.frequency ? 
@@ -247,43 +239,34 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
           return;
       }
   
-      // Prepare data for Excel
       const excelData = statusData.memberStatuses.map(member => ({
           'First Name': member.memberInfo.firstName || '',
           'Last Name': member.memberInfo.lastName || '',
-          'Amount Paid': member.paidAmount || 0,
-          'Expected Amount': member.expectedAmount || 0,
+          'Amount Paid (Period)': member.paidAmount || 0,
+          'Expected Amount (Period)': member.expectedAmount || 0,
           'Date': member.lastPayment ? new Date(member.lastPayment.date).toLocaleDateString() : 'N/A',
-          'Status': member.status || 'Unpaid',
+          'Status (Period)': member.status || 'Unpaid',
           'Last Payment Method': member.lastPayment ? member.lastPayment.method : 'N/A'
       }));
   
-      // Create workbook and worksheet
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.json_to_sheet(excelData);
   
-      // Set column widths
-      const columnWidths = [
-          { wch: 15 }, // First Name
-          { wch: 15 }, // Last Name  
-          { wch: 15 }, // Amount Paid
-          { wch: 15 }, // Expected Amount
-          { wch: 15 }, // Date
-          { wch: 15 }, // Status
-          { wch: 20 }  // Last Payment Method
+      worksheet['!cols'] = [
+          { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
       ];
-      worksheet['!cols'] = columnWidths;
   
-      // Add worksheet to workbook
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Contributions');
   
-      // Generate filename with current date
       const currentDate = new Date().toISOString().split('T')[0];
       const filename = `${chama.name}_contributions_${currentDate}.xlsx`;
   
-      // Write and download file
       XLSX.writeFile(workbook, filename);
   };
+
+  const expectedAmountPerMember = statusData && chama?.operationType === 'equal_sharing' && chama?.equalSharing?.targetAmount && statusData.memberStatuses.length > 0
+    ? chama.equalSharing.targetAmount / statusData.memberStatuses.length
+    : null;
 
   if (!chama) {
     return (
@@ -293,35 +276,37 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
     );
   }
 
+  // **MODIFIED a little bit to show the TagIcon amount for equal sharing chamas**
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Statistics Cards */}
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard 
             icon={UsersIcon}
-            title="Total Members"
+            title="Active Members"
             value={stats.total}
             color="blue"
           />
           <StatsCard 
             icon={CheckCircleIcon}
-            title="Paid Members"
+            title="Paid (This Period)"
             value={stats.paid}
-            subtitle={`${((stats.paid / stats.total) * 100).toFixed(0)}% complete`}
+            subtitle={`${stats.total > 0 ? ((stats.paid / stats.total) * 100).toFixed(0) : 0}% complete`}
             color="green"
           />
-          <StatsCard 
-            icon={XCircleIcon}
-            title="Unpaid Members"
-            value={stats.unpaid}
-            color="red"
-          />
+           {chama.operationType === 'equal_sharing' && (
+            <StatsCard 
+              icon={TagIcon}
+              title="Overall Savings Goal"
+              value={formatCurrency(chama.equalSharing?.targetAmount)}
+              color="purple"
+            />
+          )}
           <StatsCard 
             icon={CurrencyDollarIcon}
             title="Contribution Progress"
-            value={formatCurrency(stats.totalCollected)}
-            subtitle={`of ${formatCurrency(stats.expectedTotal)}`}
+            value={formatCurrency(chama.currentBalance)}
+            subtitle={chama.operationType === 'equal_sharing' ? `of ${formatCurrency(chama.equalSharing?.targetAmount)}` : `Total Collected`}
             color="blue"
           />
         </div>
@@ -329,9 +314,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
     
     
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        {/* Forms Section */}
         <div className="xl:col-span-1 space-y-6">
-          {/* M-Pesa Payment Form */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
             <div className="p-4 sm:p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Pay with M-Pesa</h3>
@@ -375,7 +358,6 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
             </div>
           </div>
 
-          {/* Manual Recording Form - Only for authorized roles */}
           {['chairperson', 'treasurer'].includes(userRole) && (
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
               <div className="p-4 sm:p-6">
@@ -426,10 +408,8 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
           )}
         </div>
 
-        {/* Status Table Section */}
         <div className="xl:col-span-3">
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-            {/* Header */}
             <div className="p-4 sm:p-6 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                 <div>
@@ -453,12 +433,12 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
 
                <div className='flex space-x-2'>
                   <button
-        onClick={generateExcel}
-        className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-    >
-        <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
-        Download Excel
-    </button>
+                    onClick={generateExcel}
+                    className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                >
+                    <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+                    Download Excel
+                </button>
                 <button
                   onClick={fetchContributionStatus}
                   disabled={isLoadingStatus}
@@ -471,7 +451,6 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
               </div>
             </div>
 
-            {/* Content */}
             <div className="p-0">
               {error ? (
                 <div className="p-6 text-center">
@@ -531,13 +510,13 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                           </td>
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                             <StatusBadge status={status} />
-                          </td>
+                          </td> 
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm">
                             <div className="font-medium text-gray-900">
                               {formatCurrency(paidAmount)}
                             </div>
                             <div className="text-gray-500">
-                              of {formatCurrency(expectedAmount)}
+                              of {formatCurrency(expectedAmountPerMember !== null ? expectedAmountPerMember : expectedAmount)}
                             </div>
                           </td>
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">

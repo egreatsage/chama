@@ -1,4 +1,3 @@
-// Complete new api route for getting contribution status
 // File Path: src/app/api/chamas/[id]/contribution-status/route.js
 
 import { NextResponse } from 'next/server';
@@ -17,7 +16,6 @@ const getCurrentPeriod = (frequency) => {
     try {
         switch (frequency?.toLowerCase()) {
             case 'weekly':
-                // Get start of current week (Sunday)
                 const dayOfWeek = now.getDay();
                 start = new Date(now);
                 start.setDate(now.getDate() - dayOfWeek);
@@ -67,10 +65,8 @@ const getCurrentPeriod = (frequency) => {
 
 export async function GET(request, { params }) {
     try {
-        // Connect to database
         await connectDB();
         
-        // Get authenticated user
         const user = await getServerSideUser();
         if (!user) {
             return NextResponse.json(
@@ -79,7 +75,6 @@ export async function GET(request, { params }) {
             );
         }
 
-        // Validate chama ID
         const { id: chamaId } =await params;
         if (!chamaId || typeof chamaId !== 'string') {
             return NextResponse.json(
@@ -88,11 +83,10 @@ export async function GET(request, { params }) {
             );
         }
 
-        // Check user membership
         const membership = await ChamaMember.findOne({ 
             userId: user.id, 
             chamaId,
-            status: { $in: ['active', 'pending'] } // Allow pending members to view
+            status: { $in: ['active', 'pending'] }
         });
         
         if (!membership) {
@@ -102,9 +96,9 @@ export async function GET(request, { params }) {
             );
         }
 
-        // Get chama details
+        // Get chama details - **MODIFIED TO INCLUDE equalSharing**
         const chama = await Chama.findById(chamaId).select(
-            'contributionAmount contributionFrequency  name'
+            'contributionAmount contributionFrequency name equalSharing'
         );
         
         if (!chama) {
@@ -114,7 +108,6 @@ export async function GET(request, { params }) {
             );
         }
 
-        // Validate contribution settings
         if (!chama.contributionAmount || chama.contributionAmount <= 0) {
             return NextResponse.json(
                 { error: "Chama contribution amount not set" }, 
@@ -122,10 +115,8 @@ export async function GET(request, { params }) {
             );
         }
 
-        // Get current period
         const { start, end } = getCurrentPeriod(chama.contributionFrequency);
         
-        // Get active members with user details
         const members = await ChamaMember.find({ 
             chamaId, 
             status: 'active' 
@@ -135,7 +126,7 @@ export async function GET(request, { params }) {
             select: 'firstName lastName photoUrl',
             model: User
         })
-        .lean(); // Use lean() for better performance
+        .lean();
         
         if (!members.length) {
             return NextResponse.json({
@@ -155,7 +146,6 @@ export async function GET(request, { params }) {
             });
         }
 
-        // Get contributions for the current period
         const contributionsInPeriod = await Contribution.find({
             chamaId,
             status: 'confirmed',
@@ -164,7 +154,6 @@ export async function GET(request, { params }) {
         .sort({ createdAt: -1 })
         .lean();
 
-        // Aggregate contributions for each member
         const contributionsMap = new Map();
         contributionsInPeriod.forEach(contribution => {
             const userId = contribution.userId.toString();
@@ -180,9 +169,8 @@ export async function GET(request, { params }) {
             });
         });
 
-        // Calculate status for each member
         const memberStatuses = members
-            .filter(member => member.userId) // Ensure user data exists
+            .filter(member => member.userId)
             .map(member => {
                 const memberId = member.userId._id.toString();
                 const contributionData = contributionsMap.get(memberId);
@@ -196,7 +184,6 @@ export async function GET(request, { params }) {
                     status = 'Partially Paid';
                 }
                 
-                // Sort payments by date (most recent first)
                 const sortedPayments = contributionData?.payments?.sort(
                     (a, b) => new Date(b.date) - new Date(a.date)
                 ) || [];
@@ -204,25 +191,22 @@ export async function GET(request, { params }) {
                 return {
                     memberInfo: member.userId,
                     status,
-                    paidAmount: Number(paidAmount.toFixed(2)), // Ensure proper decimal formatting
+                    paidAmount: Number(paidAmount.toFixed(2)),
                     expectedAmount: Number(expectedAmount.toFixed(2)),
                     lastPayment: sortedPayments.length > 0 ? sortedPayments[0] : null
                 };
             })
             .sort((a, b) => {
-                // Sort by status priority: Unpaid, Partially Paid, Paid
                 const statusOrder = { 'Unpaid': 0, 'Partially Paid': 1, 'Paid': 2 };
                 const statusDiff = statusOrder[a.status] - statusOrder[b.status];
                 
                 if (statusDiff !== 0) return statusDiff;
                 
-                // If same status, sort alphabetically by name
                 const nameA = `${a.memberInfo.firstName} ${a.memberInfo.lastName}`;
                 const nameB = `${b.memberInfo.firstName} ${b.memberInfo.lastName}`;
                 return nameA.localeCompare(nameB);
             });
 
-        // Calculate summary statistics
         const stats = {
             totalMembers: memberStatuses.length,
             paidMembers: memberStatuses.filter(m => m.status === 'Paid').length,
@@ -230,10 +214,9 @@ export async function GET(request, { params }) {
             unpaidMembers: memberStatuses.filter(m => m.status === 'Unpaid').length,
             totalCollected: Number(memberStatuses.reduce((sum, m) => sum + m.paidAmount, 0).toFixed(2)),
             expectedTotal: Number(memberStatuses.reduce((sum, m) => sum + m.expectedAmount, 0).toFixed(2)),
-            collectionRate: 0 // Will be calculated below
+            collectionRate: 0
         };
 
-        // Calculate collection rate percentage
         if (stats.expectedTotal > 0) {
             stats.collectionRate = Number(((stats.totalCollected / stats.expectedTotal) * 100).toFixed(1));
         }
@@ -249,7 +232,8 @@ export async function GET(request, { params }) {
             chamaInfo: {
                 name: chama.name,
                 contributionAmount: Number(chama.contributionAmount.toFixed(2)),
-                contributionFrequency: chama.contributionFrequency
+                contributionFrequency: chama.contributionFrequency,
+                equalSharing: chama.equalSharing // **ADDED THIS LINE**
             }
         };
 
@@ -258,7 +242,6 @@ export async function GET(request, { params }) {
     } catch (error) {
         console.error("Failed to fetch contribution status:", error);
         
-        // Return detailed error in development, generic in production
         const isDevelopment = process.env.NODE_ENV === 'development';
         const errorMessage = isDevelopment ? error.message : "Internal server error";
         
