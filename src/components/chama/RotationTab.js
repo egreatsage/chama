@@ -6,7 +6,19 @@ import toast from 'react-hot-toast';
 import { ArrowRight, RefreshCw, UserCheck, CheckCircle, XCircle, History, FileDown } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import * as XLSX from 'xlsx';
-
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid
+} from 'recharts';
 const formatCurrency = (amount) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount || 0);
 
 export default function RotationTab({ chama, members, userRole, onRotationUpdate }) {
@@ -132,7 +144,18 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
         const filename = `${chama.name}_rotation_history_${currentDate}.xlsx`;
         XLSX.writeFile(workbook, filename);
     };
+     const contributionChartData = [
+        { name: 'Paid', value: contributionStatus?.stats?.paidMembers || 0 },
+        { name: 'Unpaid', value: (contributionStatus?.stats?.unpaidMembers || 0) + (contributionStatus?.stats?.partiallyPaidMembers || 0) },
+    ];
+    const COLORS = ['#10B981', '#EF4444'];
 
+    const historyChartData = payoutHistory
+    .map(cycle => ({
+        name: `${memberMap.get(cycle.recipientId.toString())?.firstName || 'Unknown'}`,
+        'Payout Amount': cycle.actualAmount,
+    }))
+    .reverse();
     return (
         <div className="bg-gradient-to-br from-white to-gray-50 shadow-xl rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-200 hover:shadow-2xl transition-all duration-300 relative">
             <div className="space-y-6 sm:space-y-8">
@@ -411,7 +434,35 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
                         </div>
                     </div>
                 )}
-
+                    <div className="space-y-8">
+                     <div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Current Period Contributions</h3>
+                         <ResponsiveContainer width="100%" height={200}>
+                            <PieChart>
+                                <Pie data={contributionChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} fill="#8884d8">
+                                     {contributionChartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                     ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Payout History</h3>
+                         <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={historyChartData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
+                                <YAxis type="category" dataKey="name" width={80} />
+                                <Tooltip formatter={(value) => formatCurrency(value)}/>
+                                <Legend />
+                                <Bar dataKey="Payout Amount" fill="#82ca9d" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
                 {/* Payout History Section */}
                 <div className="mt-8 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 sm:p-6 border border-gray-200">
                     <div className="flex items-center justify-between">

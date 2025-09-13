@@ -331,11 +331,19 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
               color="purple"
             />
           )}
+           {chama.operationType === 'rotation_payout' && (
+            <StatsCard 
+              icon={TagIcon}
+              title="Overall Savings Goal"
+              value={formatCurrency(chama.rotationPayout?.targetAmount)}
+              color="purple"
+            />
+          )}
           <StatsCard 
             icon={CurrencyDollarIcon}
             title="Contribution Progress"
             value={formatCurrency(chama.currentBalance)}
-            subtitle={chama.operationType === 'equal_sharing' ? `of ${formatCurrency(chama.equalSharing?.targetAmount)}` : `Total Collected`}
+            subtitle={chama.operationType === 'equal_sharing' ? `of ${formatCurrency(chama.equalSharing?.targetAmount)}` : chama.operationType === 'rotation_payout' ? `of ${formatCurrency(chama.rotationPayout?.targetAmount)}` : `Total Collected`}
             color="blue"
           />
         </div>

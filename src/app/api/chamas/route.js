@@ -37,6 +37,7 @@ export async function POST(request) {
       };
     } else if (operationType === 'rotation_payout') {
       chamaData.rotationPayout = {
+          targetAmount: typeSpecificConfig.targetAmount,
           payoutAmount: typeSpecificConfig.payoutAmount, // Or calculate based on contributionAmount * members
           savingStartDate: typeSpecificConfig.savingStartDate,
           payoutFrequency: contributionFrequency, // Using contributionFrequency as payoutFrequency

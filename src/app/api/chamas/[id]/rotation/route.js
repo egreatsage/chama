@@ -112,9 +112,9 @@ export async function POST(request, { params }) {
         const activeMembers = await ChamaMember.find({ chamaId, status: 'active' });
         const contributionsInPeriod = await Contribution.find({ chamaId, status: 'confirmed', createdAt: { $gte: start, $lte: end } });
         
-        if (contributionsInPeriod.length < activeMembers.length) {
-            return NextResponse.json({ error: "Cannot proceed. Not all members have contributed for this period." }, { status: 400 });
-        }
+        // if (contributionsInPeriod.length < activeMembers.length) {
+        //     return NextResponse.json({ error: "Cannot proceed. Not all members have contributed for this period." }, { status: 400 });
+        // }
 
         const { rotationOrder, currentRecipientIndex } = chama.rotationPayout;
         const recipientUserId = rotationOrder[currentRecipientIndex];
