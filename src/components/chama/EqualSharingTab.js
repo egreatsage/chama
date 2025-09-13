@@ -4,6 +4,19 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { TrendingUp, Calendar, Target, CheckCircle, Users, Clock, FileDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from 'recharts';
 
 // A helper function to format currency
 const formatCurrency = (amount) => {
@@ -110,6 +123,18 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
     const filename = `${chama.name}_equal_sharing_history_${currentDate}.xlsx`;
     XLSX.writeFile(workbook, filename);
   };
+  const progressChartData = [
+    { name: 'Amount Saved', value: currentBalance },
+    { name: 'Remaining', value: Math.max(0, targetAmount - currentBalance) },
+  ];
+  const COLORS = ['#10B981', '#E5E7EB'];
+
+  const historyChartData = cycles
+    .map((cycle, index) => ({
+      name: `Cycle ${cycles.length - index}`,
+      'Total Distributed': cycle.totalCollected,
+    }))
+    .reverse();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 p-1 sm:p-6 lg:p-8">
@@ -120,6 +145,68 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
             Equal Sharing Overview
           </h1>
           <p className="text-gray-600 text-lg">Track your collective savings progress</p>
+        </div>
+         <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-6 sm:p-8 border border-white/20">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
+                 <div className="lg:col-span-2">
+                     <h2 className="text-2xl font-bold text-gray-800 mb-4">Savings Progress</h2>
+                     <ResponsiveContainer width="100%" height={250}>
+                         <PieChart>
+                             <Pie
+                                data={progressChartData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                innerRadius={60}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                paddingAngle={5}
+                                dataKey="value"
+                             >
+                                 {progressChartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                 ))}
+                             </Pie>
+                             <Tooltip formatter={(value) => formatCurrency(value)} />
+                             <Legend />
+                             <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-2xl font-bold fill-gray-800">
+                                {progress.toFixed(0)}%
+                            </text>
+                         </PieChart>
+                     </ResponsiveContainer>
+                 </div>
+                 
+            </div>
+            {isGoalReached && (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 rounded-xl p-6 my-6 shadow-sm">
+              <div className="flex items-center">
+                <CheckCircle className="h-8 w-8 text-green-600 mr-4 flex-shrink-0"/>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-green-800 mb-1">🎉 Goal Reached!</h3>
+                  <p className="text-green-700">
+                    {userRole === 'chairperson' ? ' You can now distribute the funds to all members.' : ' Wait for the chairperson to distribute the funds.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        
+          {userRole === 'chairperson' && isGoalReached && (
+            <div className="border-t border-gray-100 pt-6 mt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="text-sm text-gray-600">
+                  <p className="font-medium">Ready to distribute funds equally among all members</p>
+                </div>
+                <button 
+                  onClick={handleDistribute}
+                  disabled={isDistributing}
+                  className="bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-3 px-8 rounded-xl hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none transform hover:scale-105 disabled:scale-100"
+                >
+                  {isDistributing ? 'Processing...' : 'Distribute Funds' }
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Current Savings Goal Section */}

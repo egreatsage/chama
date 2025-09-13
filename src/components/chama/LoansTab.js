@@ -11,8 +11,9 @@ import {
     UserIcon,
     DocumentTextIcon,
     ExclamationTriangleIcon
-    
+
 } from '@heroicons/react/24/outline';
+import { InformationCircleIcon } from '@heroicons/react/24/solid';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount || 0);
 
@@ -399,6 +400,18 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                     <div className="text-sm text-gray-600">Total Approved</div>
                 </div>
             </div>
+            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+                    <div className="flex">
+                            <div className="flex-shrink-0">
+                                <InformationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                                 </div>
+                                   <div className="ml-3">
+                                    <p className="text-sm text-red-700">
+                                       Approved loans are subtracted from the total chama balance. Ensure sufficient funds before approving new loans.
+                                    </p>
+                                </div>
+                            </div>
+                    </div>
 
             {/* Filters */}
             <div className="p-4 sm:p-6 border-b bg-white">

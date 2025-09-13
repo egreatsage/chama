@@ -1,3 +1,4 @@
+// File Path: src/app/api/chamas/[id]/transactions/route.js
 import { NextResponse } from 'next/server';
 import { connectDB } from "@/lib/dbConnect";
 import { getServerSideUser } from '@/lib/auth';
@@ -5,6 +6,7 @@ import FinancialTransaction from "@/models/FinancialTransaction";
 import Chama from "@/models/Chama";
 import ChamaMember from "@/models/ChamaMember";
 import User from '@/models/User';
+import { logAuditEvent } from '@/lib/auditLog';
 
 const canManageFinances = (role) => ['chairperson', 'treasurer'].includes(role);
 
@@ -13,7 +15,7 @@ export async function GET(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId } = await params;
+        const { id: chamaId } = params;
 
         if (!user) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -53,18 +55,15 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        // Authorization: Only chairperson or treasurer can record transactions
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
         if (!membership || !canManageFinances(membership.role)) {
             return NextResponse.json({ error: "You do not have permission to record transactions." }, { status: 403 });
         }
 
-        // Validation
         if (!type || !['income', 'expense'].includes(type) || !category || !amount || amount <= 0) {
             return NextResponse.json({ error: "Type, category, and a valid amount are required." }, { status: 400 });
         }
 
-        // 1. Create the FinancialTransaction record
         const newTransaction = await FinancialTransaction.create({
             chamaId,
             investmentId: investmentId || null,
@@ -75,13 +74,23 @@ export async function POST(request, { params }) {
             recordedBy: user.id,
         });
         
-        // 2. Determine the amount to adjust the balance by
         const amountToUpdate = type === 'income' ? amount : -amount;
 
-        // 3. Atomically update the Chama's currentBalance
         await Chama.findByIdAndUpdate(chamaId, {
             $inc: { currentBalance: amountToUpdate }
         });
+
+        // --- AUDIT LOGGING ---
+        await logAuditEvent({
+            chamaId,
+            adminId: user.id,
+            action: 'CREATE_FINANCIAL_TRANSACTION',
+            category: 'FINANCE',
+            amount: amountToUpdate,
+            description: `Recorded ${type}: ${category}. Description: ${description || 'N/A'}`,
+            after: newTransaction.toObject()
+        });
+        // --- END AUDIT LOGGING ---
 
         const populatedTransaction = await FinancialTransaction.findById(newTransaction._id)
             .populate({
@@ -100,3 +109,4 @@ export async function POST(request, { params }) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+

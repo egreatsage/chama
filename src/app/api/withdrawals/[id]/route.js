@@ -1,10 +1,11 @@
-// src/app/api/withdrawals/[id]/route.js
-
+// File Path: src/app/api/withdrawals/[id]/route.js
 import { NextResponse } from 'next/server';
-import { connectDB } from "@/lib/dbConnect";
-import Withdrawal from "@/models/Withdrawal";
-import User from '@/models/User';
+// ... existing imports
+import { logAuditEvent } from '@/lib/auditLog'; // Import the audit logger
+import Withdrawal from '@/models/Withdrawal';
+import { connectDB } from '@/lib/dbConnect';
 import { getServerSideUser } from '@/lib/auth';
+
 
 const hasElevatedPrivileges = (user) => {
   return user && ['admin', 'treasurer'].includes(user.role);
@@ -23,6 +24,11 @@ export async function PUT(request, { params }) {
     const { id } = await params;
     const { status, amount } = await request.json();
 
+    const originalWithdrawal = await Withdrawal.findById(id).lean();
+    if (!originalWithdrawal) {
+      return NextResponse.json({ error: "Withdrawal not found" }, { status: 404 });
+    }
+
     const updateData = {};
     if (status && ['approved', 'rejected', 'pending'].includes(status)) {
       updateData.status = status;
@@ -37,9 +43,19 @@ export async function PUT(request, { params }) {
 
     const updatedWithdrawal = await Withdrawal.findByIdAndUpdate(id, updateData, { new: true });
 
-    if (!updatedWithdrawal) {
-      return NextResponse.json({ error: "Withdrawal not found" }, { status: 404 });
-    }
+    // --- AUDIT LOGGING ---
+    await logAuditEvent({
+        chamaId: updatedWithdrawal.chamaId,
+        userId: updatedWithdrawal.userId,
+        adminId: user.id,
+        action: 'WITHDRAWAL_STATUS_UPDATE',
+        category: 'WITHDRAWAL',
+        amount: updatedWithdrawal.amount,
+        description: `Admin updated withdrawal request. Status changed to ${status || 'unchanged'}. Amount changed to ${amount || 'unchanged'}.`,
+        before: originalWithdrawal,
+        after: updatedWithdrawal.toObject()
+    });
+    // --- END AUDIT LOGGING ---
 
     return NextResponse.json({
       message: 'Withdrawal updated successfully.',
@@ -62,11 +78,26 @@ export async function DELETE(request, { params }) {
         }
 
         const { id } = await params;
-        const deletedWithdrawal = await Withdrawal.findByIdAndDelete(id);
-
-        if (!deletedWithdrawal) {
-            return NextResponse.json({ error: "Withdrawal not found" }, { status: 404 });
+        
+        const withdrawalToDelete = await Withdrawal.findById(id);
+        if (!withdrawalToDelete) {
+             return NextResponse.json({ error: "Withdrawal not found" }, { status: 404 });
         }
+
+        await Withdrawal.findByIdAndDelete(id);
+
+        // --- AUDIT LOGGING ---
+        await logAuditEvent({
+            chamaId: withdrawalToDelete.chamaId,
+            userId: withdrawalToDelete.userId,
+            adminId: user.id,
+            action: 'WITHDRAWAL_DELETE',
+            category: 'WITHDRAWAL',
+            amount: withdrawalToDelete.amount,
+            description: `Admin deleted a withdrawal request of KES ${withdrawalToDelete.amount}.`,
+            before: withdrawalToDelete.toObject()
+        });
+        // --- END AUDIT LOGGING ---
 
         return NextResponse.json({ message: "Withdrawal request deleted successfully." });
 
@@ -75,3 +106,4 @@ export async function DELETE(request, { params }) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+

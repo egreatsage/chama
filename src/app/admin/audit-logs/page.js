@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { BookOpen, RefreshCw, Filter } from 'lucide-react';
+import { BookOpen, RefreshCw } from 'lucide-react';
 
 // Helper to format the date nicely
 const formatDate = (dateString) => {
@@ -17,6 +17,42 @@ const formatDate = (dateString) => {
         return 'Invalid Date';
     }
 }
+
+/**
+ * Safely gets the user's name from a potentially unpopulated object.
+ * @param {object | string | null} userObject - The user object or ID.
+ * @returns {string} The formatted name or a fallback string.
+ */
+const getUserName = (userObject) => {
+    if (!userObject) return 'System'; // No user associated with the event (e.g., system action)
+    // If populated, it's an object with names.
+    if (userObject.firstName || userObject.lastName) {
+        return `${userObject.firstName || ''} ${userObject.lastName || ''}`.trim();
+    }
+    // If it's just a string ID (population failed), show part of the ID for debugging.
+    if (typeof userObject === 'string') {
+        return `User ID: ...${userObject.slice(-6)}`;
+    }
+    // Fallback for any other unexpected structure.
+    return 'Unknown User';
+};
+
+/**
+ * Safely gets the admin's name from a potentially unpopulated object.
+ * @param {object | string | null} adminObject - The admin object or ID.
+ * @returns {string} The formatted name or a fallback string.
+ */
+const getAdminName = (adminObject) => {
+    if (!adminObject) return 'N/A'; // Action was not performed by an admin (e.g., user's own contribution)
+    if (adminObject.firstName || adminObject.lastName) {
+        return `${adminObject.firstName || ''} ${adminObject.lastName || ''}`.trim();
+    }
+    if (typeof adminObject === 'string') {
+        return `Admin ID: ...${adminObject.slice(-6)}`;
+    }
+    return 'Unknown Admin';
+};
+
 
 // Main component to display the audit logs
 function AuditLogs() {
@@ -93,7 +129,7 @@ function AuditLogs() {
                   <tr key={log._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">{formatDate(log.createdAt)}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">{log.chamaId?.name || 'N/A'}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{log.userId ? `${log.userId.firstName} ${log.userId.lastName}` : 'System'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{getUserName(log.userId)}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                             {log.action.replace(/_/g, ' ')}
@@ -103,7 +139,7 @@ function AuditLogs() {
                         {log.amount != null ? `KES ${log.amount.toLocaleString()}`: ''}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{log.description}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{log.adminId ? `${log.adminId.firstName} ${log.adminId.lastName}`: 'N/A'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{getAdminName(log.adminId)}</td>
                   </tr>
                 ))}
               </tbody>

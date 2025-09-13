@@ -226,7 +226,7 @@ export default function ChamaDetailPage() {
             </div>
 
             {/* Tab Content */}
-            <div className="p-4 sm:p-6 lg:p-8">
+            <div className="p-2 sm:p-6 lg:p-8">
               {renderTabContent()}
             </div>
           </div>
