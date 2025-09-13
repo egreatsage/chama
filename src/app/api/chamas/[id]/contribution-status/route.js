@@ -111,7 +111,7 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const { id: chamaId } = params;
+        const { id: chamaId } = await params;
         if (!chamaId || typeof chamaId !== 'string') {
             return NextResponse.json({ error: "Invalid chama ID" }, { status: 400 });
         }
