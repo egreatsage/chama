@@ -12,6 +12,7 @@ import {
   HomeIcon,
   CurrencyDollarIcon,
   UsersIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Contributions', href: '/admin/contributions', icon: HomeIcon },
   { name: 'Withdrawals', href: '/admin/withdrawals', icon: CurrencyDollarIcon },
   { name: 'Chamas', href: '/admin/chamas', icon: UsersIcon },
+  { name: 'Audit Logs', href: '/admin/audit-logs', icon: BookOpenIcon },
 
   
 ];

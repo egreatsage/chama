@@ -6,6 +6,7 @@ import Loan from "@/models/Loan";
 import Chama from "@/models/Chama";
 import ChamaMember from "@/models/ChamaMember";
 import User from '@/models/User';
+import { logAuditEvent } from '@/lib/auditLog';
 
 // GET: Fetch loans for a Chama
 export async function GET(request, { params }) {
@@ -67,6 +68,15 @@ export async function POST(request, { params }) {
       userId: user.id,
       amount,
       reason,
+    });
+     await logAuditEvent({
+        chamaId,
+        userId: user.id,
+        action: 'LOAN_REQUEST',
+        category: 'LOAN',
+        amount: amount,
+        description: `User requested a loan for: ${reason}`,
+        after: newLoan.toObject()
     });
 
     return NextResponse.json({ loan: newLoan }, { status: 201 });

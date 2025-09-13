@@ -5,6 +5,7 @@ import Contribution from "@/models/Contribution";
 import Invoice from "@/models/Invoice";
 import User from "@/models/User";
 import Chama from "@/models/Chama";
+import { logAuditEvent } from "@/lib/auditLog";
 
 export async function POST(request) {
   await connectDB();
@@ -22,6 +23,11 @@ export async function POST(request) {
 
     if (!contribution) {
       console.error(`Contribution not found for CheckoutRequestID: ${CheckoutRequestID}`);
+          await logAuditEvent({
+          action: 'MPESA_CONTRIBUTION_FAILURE',
+          category: 'CONTRIBUTION',
+          description: `M-Pesa callback received for an unknown CheckoutRequestID: ${CheckoutRequestID}. Reason: ${ResultDesc}`,
+      });
       return new Response(JSON.stringify({ error: "Contribution not found" }), { status: 404 });
     }
 
@@ -40,12 +46,23 @@ export async function POST(request) {
       contribution.amount = amount;
       await contribution.save();
 
+      await logAuditEvent({
+          chamaId: contribution.chamaId,
+          userId: contribution.userId,
+          action: 'MPESA_CONTRIBUTION_SUCCESS',
+          category: 'CONTRIBUTION',
+          amount: amount,
+          description: `M-Pesa contribution successful. Receipt: ${receipt}`,
+          after: contribution.toObject()
+      });
+
       // --- ROBUSTNESS FIX: Ensure chamaId exists before updating the balance ---
       if (contribution.chamaId && amount > 0) {
         await Chama.findByIdAndUpdate(contribution.chamaId, {
           $inc: { currentBalance: amount } // Use the parsed amount
         });
         console.log(`Successfully updated balance for Chama ID: ${contribution.chamaId}`);
+     
       } else {
         console.error(`CRITICAL: Contribution ${contribution._id} was confirmed but is missing a chamaId. Balance not updated.`);
       }
@@ -70,6 +87,14 @@ export async function POST(request) {
       contribution.status = "failed";
       contribution.failureReason = ResultDesc;
       await contribution.save();
+      await logAuditEvent({
+          chamaId: contribution.chamaId,
+          userId: contribution.userId,
+          action: 'MPESA_CONTRIBUTION_FAILURE',
+          category: 'CONTRIBUTION',
+          description: `M-Pesa contribution failed. Reason: ${ResultDesc}`,
+          after: contribution.toObject()
+      });
     }
 
     return new Response(JSON.stringify({ message: "Callback processed" }), { status: 200 });

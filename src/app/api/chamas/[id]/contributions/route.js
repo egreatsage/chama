@@ -7,6 +7,7 @@ import ChamaMember from "@/models/ChamaMember";
 import Contribution from "@/models/Contribution";
 import User from '@/models/User';
 import { sendManualContributionEmail } from '@/lib/email'; // Import the new email function
+import { logAuditEvent } from '@/lib/auditLog';
 
 // GET: Fetch all contributions for a specific Chama
 export async function GET(request, { params }) {
@@ -70,6 +71,18 @@ export async function POST(request, { params }) {
 
     await Chama.findByIdAndUpdate(chamaId, {
       $inc: { currentBalance: newContribution.amount }
+    });
+
+        const member = await User.findById(memberId);
+    await logAuditEvent({
+        chamaId,
+        adminId: adminUser.id,
+        userId: memberId,
+        action: 'MANUAL_CONTRIBUTION',
+        category: 'CONTRIBUTION',
+        amount: newContribution.amount,
+        description: `Recorded a manual cash contribution for ${member?.firstName || 'user'}. Notes: ${notes || ''}`,
+        after: newContribution.toObject()
     });
 
     // --- NEW: Send Email Notification ---
