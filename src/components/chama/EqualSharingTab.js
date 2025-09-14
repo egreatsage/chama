@@ -69,7 +69,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
   const [isNewCycleModalOpen, setIsNewCycleModalOpen] = useState(false);
   
   // Use the new currentCycle sub-document for active cycle data
-  const { targetAmount = 0, endDate: savingEndDate } = chama.equalSharing?.currentCycle || {};
+  const { targetAmount = 0} = chama.equalSharing?.currentCycle || {};
   const currentBalance = chama.currentBalance || 0;
   const isGoalReached = currentBalance > 0 && currentBalance >= targetAmount;
   // A cycle is complete if the balance is 0 AND there's a target (meaning a cycle was active)
@@ -84,6 +84,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
         if (!res.ok) throw new Error('Failed to load payout history');
         const data = await res.json();
         setCycles(data.cycles);
+        console.log('Fetched cycles:', data.cycles);
       } catch (error) {
         toast.error(error.message);
       } finally {
@@ -95,25 +96,55 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
     }
   }, [chama._id, onDataUpdate]);
 
-  const handleDistribute = async () => {
-    // ... (handleDistribute logic remains the same)
-    if (!window.confirm("Are you sure you want to distribute the funds? This will reset the current balance and start a new cycle.")) {
-        return;
-    }
-    setIsDistributing(true);
-    const toastId = toast.loading('Distributing funds...');
-    try {
-        const res = await fetch(`/api/chamas/${chama._id}/distribute`, { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        toast.success('Funds distributed successfully!', { id: toastId });
-        onDataUpdate(); // This will re-trigger the useEffect to fetch new cycle data
-    } catch (error) {
-        toast.error(error.message, { id: toastId });
-    } finally {
-        setIsDistributing(false);
-    }
-  };
+ const handleDistribute = async () => {
+    // Create confirmation toast
+    toast((t) => (
+        <div className="flex flex-col gap-3">
+            <p className="font-medium">Are you sure you want to distribute the funds?</p>
+            <p className="text-sm text-gray-600">This will reset the current balance and start a new cycle.</p>
+            <div className="flex gap-2 justify-end">
+                <button
+                    onClick={() => {
+                        toast.dismiss(t.id);
+                        // Proceed with distribution
+                        performDistribution();
+                    }}
+                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                >
+                    Yes, Distribute
+                </button>
+                <button
+                    onClick={() => toast.dismiss(t.id)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 text-sm"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+    ), {
+        duration: Infinity, // Keep open until user decides
+        style: {
+            minWidth: '350px',
+        },
+    });
+
+    // Separate function to handle the actual distribution
+    const performDistribution = async () => {
+        setIsDistributing(true);
+        const toastId = toast.loading('Distributing funds...');
+        try {
+            const res = await fetch(`/api/chamas/${chama._id}/distribute`, { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            toast.success('Funds distributed successfully!', { id: toastId });
+            onDataUpdate(); // This will re-trigger the useEffect to fetch new cycle data
+        } catch (error) {
+            toast.error(error.message, { id: toastId });
+        } finally {
+            setIsDistributing(false);
+        }
+    };
+};
 
   const handleStartNewCycle = async (cycleData) => {
     const toastId = toast.loading('Starting new cycle...');
@@ -202,6 +233,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
         </div>
         
         {/* Main Content Area: Conditional Rendering */}
+        njndjndjndjndjn
         {isCycleComplete && userRole === 'chairperson' ? (
              <div className="bg-white shadow-xl rounded-2xl p-8 text-center border">
                 <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
