@@ -45,6 +45,10 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
                 } else {
                     toast.error("Could not load payout history.");
                 }
+                // Add this in RotationTab after fetching history
+console.log('Raw payout history:', payoutHistory);
+console.log('First payout recipientId:', payoutHistory[0]?.recipientId);
+console.log('Member map:', memberMap);
             } catch (error) {
                 toast.error("Failed to load rotation data.");
             } finally {
@@ -538,7 +542,7 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
                                                 {new Date(cycle.endDate).toLocaleDateString()}
                                             </td>
                                             <td className="py-3 px-4 text-sm font-medium text-gray-800">
-                                                {memberMap.get(cycle.recipientId)?.firstName || 'Unknown'} {memberMap.get(cycle.recipientId)?.lastName || 'Member'}
+                                                {memberMap.get(cycle.recipientId.toString())?.firstName || 'Unknown'} {memberMap.get(cycle.recipientId.toString())?.lastName || 'Member'}
                                             </td>
                                             <td className="py-3 px-4 text-right text-sm font-bold text-green-600">
                                                 {formatCurrency(cycle.actualAmount)}

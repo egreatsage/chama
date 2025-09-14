@@ -119,7 +119,7 @@ export async function POST(request, { params }) {
         const { rotationOrder, currentRecipientIndex } = chama.rotationPayout;
         const recipientUserId = rotationOrder[currentRecipientIndex];
         const recipientUser = await User.findById(recipientUserId);
-        const totalPot = chama.contributionAmount * activeMembers.length;
+        const totalPot = contributionsInPeriod.reduce((acc, contribution) => acc + contribution.amount, 0);
 
         await ChamaCycle.create({
             chamaId,
@@ -128,7 +128,7 @@ export async function POST(request, { params }) {
             startDate: start,
             endDate: new Date(),
             recipientId: recipientUserId,
-            expectedAmount: totalPot,
+            expectedAmount: chama.rotationPayout.targetAmount || totalPot,
             actualAmount: totalPot,
             status: 'completed'
         });
