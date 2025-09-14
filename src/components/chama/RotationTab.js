@@ -117,12 +117,13 @@ console.log('Member map:', memberMap);
     ];
     const COLORS = ['#10B981', '#EF4444'];
 
-    const historyChartData = payoutHistory
-        .map(cycle => ({
-            name: `${memberMap.get(cycle.recipientId.toString())?.firstName || 'Unknown'}`,
-            'Payout Amount': cycle.actualAmount,
-        }))
-        .reverse();
+const historyChartData = payoutHistory
+    .map(cycle => ({
+        // FIX: Access the first name directly from the populated recipientId object
+        name: `${cycle.recipientId?.firstName || 'Unknown'}`,
+        'Payout Amount': cycle.actualAmount,
+    }))
+    .reverse();
 
     const generateHistoryExcel = () => {
         if (!payoutHistory || payoutHistory.length === 0) {
