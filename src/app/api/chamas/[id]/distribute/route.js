@@ -30,7 +30,7 @@ export async function POST(request, { params }) {
     }
     
     // Logic Check: Ensure the goal has been met
-    const targetAmount = chama.equalSharing.targetAmount || 0;
+    const targetAmount = chama.equalSharing.currentCycle.targetAmount || 0;
     if (chama.currentBalance < targetAmount) {
         return NextResponse.json({ error: "Savings goal has not been reached yet." }, { status: 400 });
     }
@@ -56,18 +56,21 @@ export async function POST(request, { params }) {
     await ChamaCycle.create({
       chamaId,
       cycleType: 'equal_sharing',
-      targetAmount,
+      targetAmount: chama.equalSharing.currentCycle.targetAmount,
       totalCollected: totalToDistribute,
       payouts,
-      startDate: chama.createdAt, // Note: This could be improved to track specific cycle start dates
+      startDate: chama.equalSharing.currentCycle.startDate,
       endDate: cycleEndDate,
       distributedBy: user.id,
     });
 
-    // Atomically update the Chama: Add to total and reset the balance
+    // Atomically update the Chama: Add to total, reset balance and clear current cycle
     await Chama.findByIdAndUpdate(chamaId, {
       $inc: { totalContributions: totalToDistribute },
-      $set: { currentBalance: 0 }
+      $set: { 
+        currentBalance: 0,
+        "equalSharing.currentCycle": { targetAmount: 0, startDate: null, endDate: null } 
+      }
     });
     
     // Send Payout Notification Emails to All Members
@@ -96,4 +99,3 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-

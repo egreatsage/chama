@@ -60,12 +60,18 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "You do not have permission to add contributions." }, { status: 403 });
     }
     
+    const chama = await Chama.findById(chamaId);
+    if (!chama) {
+        return NextResponse.json({ error: "Chama not found" }, { status: 404 });
+    }
+
     const newContribution = await Contribution.create({
       chamaId,
       userId: memberId,
       amount: Number(amount),
       paymentMethod: 'cash',
       status: 'confirmed',
+      cycle: chama.cycleCount,
       notes: notes || `Recorded by ${adminUser.firstName}`
     });
 
@@ -88,7 +94,6 @@ export async function POST(request, { params }) {
     // --- NEW: Send Email Notification ---
     try {
         const member = await User.findById(memberId);
-        const chama = await Chama.findById(chamaId);
         if (member && chama) {
             await sendManualContributionEmail({
                 to: member.email,
@@ -113,4 +118,3 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-

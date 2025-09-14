@@ -7,7 +7,8 @@ const ContributionSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   status: { type: String, enum: ["pending", "confirmed", "failed"], default: "pending" },
   paymentMethod: { type: String, enum: ["mpesa", "cash", "bank_transfer"], default: "mpesa" },
-  
+  cycle: { type: Number, required: true },
+
   // M-Pesa specific fields
   // FIX: The `sparse: true` option allows multiple documents to have a null value for this field.
   // This is essential for allowing multiple manual "cash" entries.
@@ -23,4 +24,3 @@ const ContributionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 export default mongoose.models.Contribution || mongoose.model("Contribution", ContributionSchema);
-

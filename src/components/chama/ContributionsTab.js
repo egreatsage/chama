@@ -83,14 +83,14 @@ const StatsCard = ({ icon: Icon, title, value, subtitle, paragraph, color = 'blu
           <p className="text-sm font-medium text-gray-600 truncate">{title}</p>
           <p className="text-2xl font-bold text-gray-900">{value}</p>
           {subtitle && <p className="text-sm text-gray-500 truncate">{subtitle}</p>}
-          {paragraph && <p className="text-sm underline text-green-500">{paragraph}</p>}
+          {paragraph && <p className="text-sm text-gray-500">{paragraph}</p>}
         </div>
       </div>
     </div>
   );
 };
 
-export default function ContributionsTab({ chama, members = [], userRole, currentUserId }) {
+export default function ContributionsTab({ chama, members = [], userRole, currentUserId, cycles = [] }) {
   const [statusData, setStatusData] = useState(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [error, setError] = useState(null);
@@ -281,34 +281,59 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
   // **MODIFIED a little bit to show the TagIcon amount for equal sharing chamas**
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {chama.operationType === 'equal_sharing' && (
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-                <div className="flex">
-                    <div className="flex-shrink-0">
-                        <InformationCircleIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
-                    </div>
-                    <div className="ml-3">
-                        <p className="text-sm text-blue-700">
-                            Each member's total contribution goal is approximately{' '}
-                            <span className="font-bold">{formatCurrency((chama.equalSharing?.currentCycle?.targetAmount || 0) / (members.length || 1))}</span>
-                            , calculated as (Target Amount / Number of Members).
-                        </p>
-                    </div>
-                </div>
-            </div>
-        )}
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
-                <div className="flex">
-                    <div className="flex-shrink-0">
-                        <InformationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-                    </div>
-                    <div className="ml-3">
-                        <p className="text-sm text-red-700">
-                           NOTE, Amount in the contribution status table reflects payments made during the current period only.Loans,Expenses and Incomes affect the chama's overall balance but are not included in this table.
-                        </p>
-                    </div>
-                </div>
-            </div>
+     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-xl rounded-xl p-6 md:p-8 border-l-4 border-blue-500 hover:shadow-2xl transition-all duration-300 backdrop-blur-sm">
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 sm:mb-0">
+      Current Cycle 
+      <span className="inline-block bg-blue-500 text-white px-3 py-1 rounded-full text-sm md:text-base ml-2 font-medium">
+        #{chama.cycleCount || 1}
+      </span>
+    </h2>
+    <div className="flex items-center space-x-2">
+      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+      <span className="text-sm text-gray-600 font-medium">Active</span>
+    </div>
+  </div>
+  
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+    <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 md:p-5 border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:transform hover:-translate-y-1">
+      <div className="flex items-center mb-2">
+        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+        <p className="text-gray-600 text-xs md:text-sm uppercase tracking-wide font-medium">Start Date</p>
+      </div>
+      <p className="font-bold text-gray-800 text-base md:text-lg">
+        {chama.equalSharing?.currentCycle?.startDate ? 
+          new Date(chama.equalSharing.currentCycle.startDate).toLocaleDateString() : 
+          <span className="text-gray-400 italic">Not set</span>
+        }
+      </p>
+    </div>
+    
+    <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 md:p-5 border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:transform hover:-translate-y-1">
+      <div className="flex items-center mb-2">
+        <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+        <p className="text-gray-600 text-xs md:text-sm uppercase tracking-wide font-medium">End Date</p>
+      </div>
+      <p className="font-bold text-gray-800 text-base md:text-lg">
+        {chama.equalSharing?.currentCycle?.endDate ? 
+          new Date(chama.equalSharing.currentCycle.endDate).toLocaleDateString() : 
+          <span className="text-gray-400 italic">Not set</span>
+        }
+      </p>
+    </div>
+    
+    <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 md:p-5 border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:transform hover:-translate-y-1 sm:col-span-2 lg:col-span-1">
+      <div className="flex items-center mb-2">
+        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+        <p className="text-gray-600 text-xs md:text-sm uppercase tracking-wide font-medium">Target Amount</p>
+      </div>
+      <p className="font-bold text-gray-800 text-lg md:text-xl">
+        {formatCurrency(chama.equalSharing?.currentCycle?.targetAmount)}
+      </p>
+    </div>
+  </div>
+</div>
+
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard 
@@ -631,6 +656,32 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Contribution History</h3>
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cycle</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Collected</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {cycles.map((cycle, index) => (
+                <tr key={cycle._id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Cycle #{cycles.length - index}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(cycle.targetAmount)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(cycle.totalCollected)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(cycle.endDate).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

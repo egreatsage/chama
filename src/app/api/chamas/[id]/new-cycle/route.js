@@ -28,6 +28,10 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "This action is only for Equal Sharing chamas." }, { status: 400 });
         }
 
+        if (chama.equalSharing.currentCycle && chama.equalSharing.currentCycle.targetAmount > 0) {
+            return NextResponse.json({ error: "A cycle is already active. Distribute the current cycle before starting a new one." }, { status: 400 });
+        }
+
         if (chama.currentBalance > 0) {
             return NextResponse.json({ error: "Cannot start a new cycle until the current balance is distributed." }, { status: 400 });
         }

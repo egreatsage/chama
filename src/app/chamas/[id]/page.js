@@ -26,6 +26,7 @@ import TransactionsTab from '@/components/chama/TransactionsTab';
 export default function ChamaDetailPage() {
   const [chama, setChama] = useState(null);
   const [members, setMembers] = useState([]);
+  const [cycles, setCycles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
@@ -38,9 +39,10 @@ export default function ChamaDetailPage() {
     if (!id) return;
     setError(null);
     try {
-      const [chamaRes, membersRes] = await Promise.all([
+      const [chamaRes, membersRes, cyclesRes] = await Promise.all([
         fetch(`/api/chamas/${id}`),
         fetch(`/api/chamas/${id}/members`),
+        fetch(`/api/chamas/${id}/cycles`),
       ]);
 
       if (!chamaRes.ok) throw new Error('Failed to load Chama details');
@@ -50,6 +52,10 @@ export default function ChamaDetailPage() {
       if (!membersRes.ok) throw new Error('Failed to load members');
       const membersData = await membersRes.json();
       setMembers(membersData.members);
+
+      if (!cyclesRes.ok) throw new Error('Failed to load cycle history');
+      const cyclesData = await cyclesRes.json();
+      setCycles(cyclesData.cycles);
 
     } catch (err) {
       setError(err.message);
@@ -129,10 +135,11 @@ export default function ChamaDetailPage() {
       case 'members':
         return <MembersList members={members} chama={chama} onActionComplete={fetchData} />;
       case 'contributions':
-        return <ContributionsTab chama={chama} members={members} userRole={chama.userRole} currentUserId={currentUser?.id} />;
+        return <ContributionsTab chama={chama} members={members} userRole={chama.userRole} currentUserId={currentUser?.id} cycles={cycles} />;
       case 'rotation':
         if (chama.operationType === 'rotation_payout') {
-          return <RotationTab chama={chama} members={members} userRole={chama.userRole} onRotationUpdate={fetchData} />;}
+          return <RotationTab chama={chama} members={members} userRole={chama.userRole} onRotationUpdate={fetchData} cycles={cycles} />;
+        }
         break;
       case 'rules':
         return <RulesTab chama={chama} userRole={chama.userRole} />;
@@ -152,7 +159,7 @@ export default function ChamaDetailPage() {
 
       default:
         if (chama.operationType === 'equal_sharing') {
-          return <EqualSharingTab chama={chama} userRole={chama.userRole} onDataUpdate={fetchData} />;
+          return <EqualSharingTab chama={chama} userRole={chama.userRole} onDataUpdate={fetchData} cycles={cycles} />;
         }
         return (
           <div className="bg-white shadow-xl rounded-2xl p-6 lg:p-8 border border-gray-200">
@@ -283,4 +290,3 @@ function TabButton({ isActive, onClick, children, color = 'blue' }) {
     </button>
   );
 }
-

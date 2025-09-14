@@ -62,9 +62,7 @@ const NewCycleModal = ({ isOpen, onClose, onSubmit }) => {
 };
 
 
-export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
-  const [cycles, setCycles] = useState([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+export default function EqualSharingTab({ chama, userRole, onDataUpdate, cycles = [] }) {
   const [isDistributing, setIsDistributing] = useState(false);
   const [isNewCycleModalOpen, setIsNewCycleModalOpen] = useState(false);
   
@@ -74,27 +72,6 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
   const isGoalReached = currentBalance > 0 && currentBalance >= targetAmount;
   // A cycle is complete if the balance is 0 AND there's a target (meaning a cycle was active)
   const isCycleComplete = cycles.length >= chama.cycleCount && targetAmount > 0;
-
-  // ... (useEffect for fetchCycleHistory remains the same)
-    useEffect(() => {
-    const fetchCycleHistory = async () => {
-      setIsLoadingHistory(true);
-      try {
-        const res = await fetch(`/api/chamas/${chama._id}/cycles`);
-        if (!res.ok) throw new Error('Failed to load payout history');
-        const data = await res.json();
-        setCycles(data.cycles);
-        console.log('Fetched cycles:', data.cycles);
-      } catch (error) {
-        toast.error(error.message);
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    };
-    if (chama._id) {
-        fetchCycleHistory();
-    }
-  }, [chama._id, onDataUpdate]);
 
  const handleDistribute = async () => {
     // Create confirmation toast
@@ -304,7 +281,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
                     <FileDown className="h-4 w-4 mr-2" /> Export
                 </button>
             </div>
-            {isLoadingHistory ? <div className="text-center py-12">Loading history...</div> : cycles.length === 0 ? <div className="text-center py-12 text-gray-500">No payout cycles completed yet.</div> : (
+            {cycles.length === 0 ? <div className="text-center py-12 text-gray-500">No payout cycles completed yet.</div> : (
                 <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={historyChartData}>
                         <CartesianGrid strokeDasharray="3 3" />

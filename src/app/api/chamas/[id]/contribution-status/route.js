@@ -122,7 +122,7 @@ export async function GET(request, { params }) {
         }
 
         // --- 2. FETCH CHAMA AND MEMBER DATA ---
-        const chama = await Chama.findById(chamaId).select('name operationType contributionFrequency equalSharing rotationPayout');
+        const chama = await Chama.findById(chamaId).select('name operationType contributionFrequency equalSharing rotationPayout cycleCount');
         if (!chama) {
             return NextResponse.json({ error: "Chama not found" }, { status: 404 });
         }
@@ -164,6 +164,7 @@ export async function GET(request, { params }) {
         const contributionsInPeriod = await Contribution.find({
             chamaId,
             status: 'confirmed',
+            cycle: chama.cycleCount,
             createdAt: { $gte: start, $lte: end }
         }).lean();
 
@@ -257,4 +258,3 @@ export async function GET(request, { params }) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
-

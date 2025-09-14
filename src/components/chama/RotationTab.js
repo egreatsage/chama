@@ -11,10 +11,9 @@ import {
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount || 0);
 
-export default function RotationTab({ chama, members, userRole, onRotationUpdate }) {
+export default function RotationTab({ chama, members, userRole, onRotationUpdate, cycles = [] }) {
     const [isSaving, setIsSaving] = useState(false);
     const [contributionStatus, setContributionStatus] = useState(null);
-    const [payoutHistory, setPayoutHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const memberMap = new Map(members.map(m => [m.userId._id.toString(), m.userId]));
@@ -22,40 +21,27 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
     const [orderedMembers, setOrderedMembers] = useState(
         rotationOrderIds.map(userId => memberMap.get(userId.toString())).filter(Boolean)
     );
+    
+    const payoutHistory = cycles?.filter(c => c.cycleType === 'rotation_cycle');
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchContributionStatus = async () => {
             setIsLoading(true);
             try {
-                const [statusRes, historyRes] = await Promise.all([
-                    fetch(`/api/chamas/${chama._id}/contribution-status`),
-                    fetch(`/api/chamas/${chama._id}/cycles`)
-                ]);
-
-                if (statusRes.ok) {
-                    const statusData = await statusRes.json();
+                const res = await fetch(`/api/chamas/${chama._id}/contribution-status`);
+                if (res.ok) {
+                    const statusData = await res.json();
                     setContributionStatus(statusData);
                 } else {
                     toast.error("Could not load contribution status.");
                 }
-
-                if (historyRes.ok) {
-                    const historyData = await historyRes.json();
-                    setPayoutHistory(historyData.cycles?.filter(c => c.cycleType === 'rotation_cycle'));
-                } else {
-                    toast.error("Could not load payout history.");
-                }
-                // Add this in RotationTab after fetching history
-console.log('Raw payout history:', payoutHistory);
-console.log('First payout recipientId:', payoutHistory[0]?.recipientId);
-console.log('Member map:', memberMap);
             } catch (error) {
                 toast.error("Failed to load rotation data.");
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchData();
+        fetchContributionStatus();
     }, [chama._id, onRotationUpdate]);
     
     const onDragEnd = (result) => {
