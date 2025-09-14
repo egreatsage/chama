@@ -73,7 +73,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate }) {
   const currentBalance = chama.currentBalance || 0;
   const isGoalReached = currentBalance > 0 && currentBalance >= targetAmount;
   // A cycle is complete if the balance is 0 AND there's a target (meaning a cycle was active)
-  const isCycleComplete = currentBalance === 0 && targetAmount > 0;
+  const isCycleComplete = cycles.length >= chama.cycleCount && targetAmount > 0;
 
   // ... (useEffect for fetchCycleHistory remains the same)
     useEffect(() => {

@@ -1,3 +1,5 @@
+// src/app/api/chamas/route.js
+
 import { NextResponse } from 'next/server';
 import { connectDB } from "@/lib/dbConnect";
 import Chama from "@/models/Chama";
@@ -29,23 +31,28 @@ export async function POST(request) {
       status: 'pending',
     };
 
+    // --- THIS IS THE CORRECTED SECTION ---
     if (operationType === 'equal_sharing') {
       chamaData.equalSharing = {
-          targetAmount: typeSpecificConfig.targetAmount,
-          savingStartDate: typeSpecificConfig.savingStartDate,
-          savingEndDate: typeSpecificConfig.savingEndDate,
+          currentCycle: { // Directly create the nested currentCycle object
+              targetAmount: typeSpecificConfig.targetAmount,
+              startDate: typeSpecificConfig.savingStartDate || new Date(),
+              endDate: typeSpecificConfig.savingEndDate,
+          }
       };
     } else if (operationType === 'rotation_payout') {
       chamaData.rotationPayout = {
           targetAmount: typeSpecificConfig.targetAmount,
-          payoutAmount: typeSpecificConfig.payoutAmount, // Or calculate based on contributionAmount * members
-          savingStartDate: typeSpecificConfig.savingStartDate,
-          payoutFrequency: contributionFrequency, // Using contributionFrequency as payoutFrequency
+          // Payout amount logic might need refinement based on your business rules
+          payoutAmount: typeSpecificConfig.payoutAmount || typeSpecificConfig.targetAmount, 
+          savingStartDate: typeSpecificConfig.savingStartDate || new Date(),
+          payoutFrequency: contributionFrequency,
       };
     } 
+    // --- END OF CORRECTION ---
 
     const newChama = await Chama.create(chamaData);
-    console.log('Created Chama:', newChama);
+
     await ChamaMember.create({
         chamaId: newChama._id,
         userId: user.id,

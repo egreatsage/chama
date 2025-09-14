@@ -65,7 +65,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const StatsCard = ({ icon: Icon, title, value, subtitle, color = 'blue' }) => {
+const StatsCard = ({ icon: Icon, title, value, subtitle, paragraph, color = 'blue' }) => {
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
@@ -83,6 +83,7 @@ const StatsCard = ({ icon: Icon, title, value, subtitle, color = 'blue' }) => {
           <p className="text-sm font-medium text-gray-600 truncate">{title}</p>
           <p className="text-2xl font-bold text-gray-900">{value}</p>
           {subtitle && <p className="text-sm text-gray-500 truncate">{subtitle}</p>}
+          {paragraph && <p className="text-sm underline text-green-500">{paragraph}</p>}
         </div>
       </div>
     </div>
@@ -265,7 +266,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
       XLSX.writeFile(workbook, filename);
   };
 
-  const expectedAmountPerMember = statusData && chama?.operationType === 'equal_sharing' && chama?.equalSharing?.targetAmount && statusData.memberStatuses.length > 0
+  const expectedAmountPerMember = statusData && chama?.operationType === 'equal_sharing' && chama?.equalSharing?.currentCycle?.targetAmount && statusData.memberStatuses.length > 0
     ? chama.equalSharing.currentCycle.targetAmount / statusData.memberStatuses.length
     : null;
 
@@ -289,7 +290,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                     <div className="ml-3">
                         <p className="text-sm text-blue-700">
                             Each member's total contribution goal is approximately{' '}
-                            <span className="font-bold">{formatCurrency((chama.equalSharing.currentCycletargetAmount || 0) / (members.length || 1))}</span>
+                            <span className="font-bold">{formatCurrency((chama.equalSharing?.currentCycle?.targetAmount || 0) / (members.length || 1))}</span>
                             , calculated as (Target Amount / Number of Members).
                         </p>
                     </div>
@@ -327,7 +328,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
             <StatsCard 
               icon={TagIcon}
               title="Overall Savings Goal"
-              value={formatCurrency(chama.equalSharing?.targetAmount)}
+              value={formatCurrency(chama.equalSharing?.currentCycle?.targetAmount)}
               color="purple"
             />
           )}
@@ -339,11 +340,24 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
               color="purple"
             />
           )}
-          <StatsCard 
+          <StatsCard
             icon={CurrencyDollarIcon}
             title="Contribution Progress"
             value={formatCurrency(chama.currentBalance)}
-            subtitle={chama.operationType === 'equal_sharing' ? `of ${formatCurrency(chama.equalSharing?.targetAmount)}` : chama.operationType === 'rotation_payout' ? `of ${formatCurrency(chama.rotationPayout?.targetAmount)}` : `Total Collected`}
+            subtitle={
+              chama.operationType === 'equal_sharing'
+                ? `of ${formatCurrency(chama.equalSharing?.currentCycle?.targetAmount)}`
+                : chama.operationType === 'rotation_payout'
+                ? `of ${formatCurrency(chama.rotationPayout?.targetAmount)}`
+                : `Total Collected`
+            }
+            paragraph={
+              chama.operationType === 'equal_sharing'
+                ? `Remaining: ${formatCurrency((chama.equalSharing?.currentCycle?.targetAmount || 0) - chama.currentBalance)}`
+                : chama.operationType === 'rotation_payout'
+                ? `Remaining: ${formatCurrency((chama.rotationPayout?.targetAmount || 0) - chama.currentBalance)}`
+                : null
+            }
             color="blue"
           />
         </div>
@@ -455,7 +469,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                   </h3>
                   <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
   <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-    {chama.operationType === 'equal_sharing' && chama.equalSharing?.savingStartDate ? (
+    {chama.operationType === 'equal_sharing' && chama.equalSharing?.currentCycle?.startDate ? (
       <>
         <div className="flex items-center gap-2">
           <svg className="h-4 w-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -465,13 +479,13 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
         </div>
         <div className="text-gray-600 ml-6 sm:ml-0">
           <span className="bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm">
-            {new Date(chama.equalSharing.savingStartDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date(chama.equalSharing.currentCycle.startDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
           </span>
-          {chama.equalSharing.savingEndDate && (
+          {chama.equalSharing.currentCycle.endDate && (
             <>
               <span className="mx-2 text-gray-400">→</span>
               <span className="bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm">
-                {new Date(chama.equalSharing.savingEndDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
+                {new Date(chama.equalSharing.currentCycle.endDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
               </span>
             </>
           )}

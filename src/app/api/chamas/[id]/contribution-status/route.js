@@ -144,10 +144,10 @@ export async function GET(request, { params }) {
             expectedAmountForPeriod = totalPot / memberCount;
         } else if (chama.operationType === 'equal_sharing') {
             // For equal sharing, we divide the total goal by the number of contribution periods.
-            const totalTarget = chama.equalSharing.targetAmount || 0;
+            const totalTarget = chama.equalSharing.currentCycle.targetAmount || 0;
             const totalContributionPeriods = calculatePeriods(
-                chama.equalSharing.savingStartDate, 
-                chama.equalSharing.savingEndDate, 
+                chama.equalSharing.currentCycle.startDate, 
+                chama.equalSharing.currentCycle.endDate, 
                 chama.contributionFrequency
             );
             
