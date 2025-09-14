@@ -542,8 +542,8 @@ console.log('Member map:', memberMap);
                                                 {new Date(cycle.endDate).toLocaleDateString()}
                                             </td>
                                             <td className="py-3 px-4 text-sm font-medium text-gray-800">
-                                                {memberMap.get(cycle.recipientId.toString())?.firstName || 'Unknown'} {memberMap.get(cycle.recipientId.toString())?.lastName || 'Member'}
-                                            </td>
+  {cycle.recipientId?.firstName || 'Unknown'} {cycle.recipientId?.lastName || 'Member'}
+</td>
                                             <td className="py-3 px-4 text-right text-sm font-bold text-green-600">
                                                 {formatCurrency(cycle.actualAmount)}
                                             </td>

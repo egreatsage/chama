@@ -1,4 +1,6 @@
-// File Path: src/app/api/chamas/[id]/rotation/route.js
+// src/app/api/chamas/[id]/rotation/route.js
+
+// ... (keep all imports and the getCurrentPeriod helper function)
 import { NextResponse } from 'next/server';
 import { connectDB } from "@/lib/dbConnect";
 import { getServerSideUser } from '@/lib/auth';
@@ -9,7 +11,6 @@ import ChamaCycle from "@/models/ChamaCycle";
 import User from "@/models/User";
 import { sendRotationPayoutEmail } from '@/lib/email';
 
-// Helper function to get the start and end of the current contribution period
 const getCurrentPeriod = (frequency) => {
     const now = new Date();
     let start, end;
@@ -39,7 +40,8 @@ const getCurrentPeriod = (frequency) => {
     return { start, end };
 };
 
-// PUT: Handles setting or updating the rotation order
+
+// ... (keep the PUT function as is)
 export async function PUT(request, { params }) {
     await connectDB();
     try {
@@ -51,12 +53,10 @@ export async function PUT(request, { params }) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         
-        // --- FIX: Use the consistent, direct authorization check ---
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
         if (!membership || membership.role !== 'chairperson') {
             return NextResponse.json({ error: "Unauthorized: Only the chairperson can set the rotation order." }, { status: 403 });
         }
-        // --- END FIX ---
 
         if (!Array.isArray(rotationOrder)) {
             return NextResponse.json({ error: "Invalid rotation order provided." }, { status: 400 });
@@ -91,53 +91,66 @@ export async function PUT(request, { params }) {
     }
 }
 
-// POST: Executes the payout and advances the rotation
+
+// CORRECTED POST FUNCTION
+// POST: Executes the payout, creates a historical record, and advances the rotation
 export async function POST(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId } = await params;
+        const { id: chamaId } = params;
 
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
 
         const chama = await Chama.findById(chamaId);
-        if (!chama) return NextResponse.json({ error: "Chama not found." }, { status: 404 });
+        if (!chama) {
+            return NextResponse.json({ error: "Chama not found." }, { status: 404 });
+        }
         
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
         if (!membership || membership.role !== 'chairperson') {
             return NextResponse.json({ error: "Only the chairperson can execute a payout." }, { status: 403 });
         }
         
-        const { start, end } = getCurrentPeriod(chama.contributionFrequency);
-        const activeMembers = await ChamaMember.find({ chamaId, status: 'active' });
-        const contributionsInPeriod = await Contribution.find({ chamaId, status: 'confirmed', createdAt: { $gte: start, $lte: end } });
-        
-        // if (contributionsInPeriod.length < activeMembers.length) {
-        //     return NextResponse.json({ error: "Cannot proceed. Not all members have contributed for this period." }, { status: 400 });
-        // }
-
+        const { start } = getCurrentPeriod(chama.contributionFrequency);
         const { rotationOrder, currentRecipientIndex } = chama.rotationPayout;
+        
+        if (!rotationOrder || rotationOrder.length === 0) {
+            return NextResponse.json({ error: "Rotation order is not set." }, { status: 400 });
+        }
+
         const recipientUserId = rotationOrder[currentRecipientIndex];
         const recipientUser = await User.findById(recipientUserId);
-        const totalPot = contributionsInPeriod.reduce((acc, contribution) => acc + contribution.amount, 0);
-
+        
+        // **FIX:** Calculate totalPot based on the targetAmount in the chama settings
+        const totalPot = chama.rotationPayout.targetAmount || 0;
+        if (totalPot <= 0) {
+            return NextResponse.json({ error: "Payout amount (targetAmount) is not set for this rotation." }, { status: 400 });
+        }
+        
+        // **FIX:** Create the historical ChamaCycle record for this payout
         await ChamaCycle.create({
             chamaId,
             cycleType: 'rotation_cycle',
-            cycleNumber: currentRecipientIndex + 1,
+            cycleNumber: currentRecipientIndex + 1, // Or a more sophisticated cycle counter
             startDate: start,
             endDate: new Date(),
             recipientId: recipientUserId,
-            expectedAmount: chama.rotationPayout.targetAmount || totalPot,
-            actualAmount: totalPot,
+            expectedAmount: totalPot,
+            actualAmount: totalPot, // Assuming the full pot is paid out
             status: 'completed'
         });
 
+        // Advance the rotation for the next cycle
         const nextIndex = (currentRecipientIndex + 1) % rotationOrder.length;
         chama.rotationPayout.currentRecipientIndex = nextIndex;
-        chama.currentBalance = 0;
+        // Optionally reset balance if you track contributions this way
+        // chama.currentBalance = 0; 
         await chama.save();
         
+        // Send notification email to the recipient
         if (recipientUser) {
             await sendRotationPayoutEmail({
                 to: recipientUser.email,
@@ -149,10 +162,10 @@ export async function POST(request, { params }) {
             });
         }
 
-        return NextResponse.json({ message: `Payout successfully made to ${recipientUser.firstName}. Rotation advanced.` });
+        return NextResponse.json({ message: `Payout of KES ${totalPot} successfully made to ${recipientUser.firstName}. Rotation advanced.` });
 
     } catch (error) {
-        console.error("Failed to advance rotation:", error);
+        console.error("Failed to execute payout and advance rotation:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
