@@ -266,7 +266,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
   };
 
   const expectedAmountPerMember = statusData && chama?.operationType === 'equal_sharing' && chama?.equalSharing?.targetAmount && statusData.memberStatuses.length > 0
-    ? chama.equalSharing.targetAmount / statusData.memberStatuses.length
+    ? chama.equalSharing.currentCycle.targetAmount / statusData.memberStatuses.length
     : null;
 
   if (!chama) {
@@ -289,7 +289,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                     <div className="ml-3">
                         <p className="text-sm text-blue-700">
                             Each member's total contribution goal is approximately{' '}
-                            <span className="font-bold">{formatCurrency((chama.equalSharing.targetAmount || 0) / (members.length || 1))}</span>
+                            <span className="font-bold">{formatCurrency((chama.equalSharing.currentCycletargetAmount || 0) / (members.length || 1))}</span>
                             , calculated as (Target Amount / Number of Members).
                         </p>
                     </div>

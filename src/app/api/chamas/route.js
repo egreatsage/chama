@@ -45,7 +45,7 @@ export async function POST(request) {
     } 
 
     const newChama = await Chama.create(chamaData);
-
+    console.log('Created Chama:', newChama);
     await ChamaMember.create({
         chamaId: newChama._id,
         userId: user.id,

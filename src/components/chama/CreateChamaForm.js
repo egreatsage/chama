@@ -282,6 +282,7 @@ export default function CreateChamaForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast.success('Chama submitted for approval!', { id: toastId });
+      console.log(formData);
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (error) {
       toast.error(error.message, { id: toastId });
