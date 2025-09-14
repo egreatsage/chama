@@ -159,18 +159,17 @@ export async function GET(request, { params }) {
             }
         }
 
-        // --- 4. FETCH CONTRIBUTIONS FOR THE CURRENT PERIOD ---
-        const { start, end } = getCurrentPeriod(chama.contributionFrequency);
-        const contributionsInPeriod = await Contribution.find({
+        // --- 4. FETCH CONTRIBUTIONS FOR THE CURRENT CYCLE (REMOVED DATE FILTER) ---
+        const contributionsInCycle = await Contribution.find({
             chamaId,
             status: 'confirmed',
-            cycle: chama.cycleCount,
-            createdAt: { $gte: start, $lte: end }
+            cycle: chama.cycleCount
+            // The createdAt date filter has been removed
         }).lean();
 
         // --- 5. PROCESS AND MAP CONTRIBUTIONS TO MEMBERS ---
         const contributionsMap = new Map();
-        contributionsInPeriod.forEach(contribution => {
+        contributionsInCycle.forEach(contribution => {
             const userId = contribution.userId.toString();
             if (!contributionsMap.has(userId)) {
                 contributionsMap.set(userId, { total: 0, payments: [] });
@@ -185,6 +184,7 @@ export async function GET(request, { params }) {
         });
 
         // --- 6. DETERMINE THE STATUS OF EACH MEMBER FOR THE PERIOD ---
+        const { start, end } = getCurrentPeriod(chama.contributionFrequency);
         const memberStatuses = members
             .filter(member => member.userId) // Ensure member has a user attached
             .map(member => {

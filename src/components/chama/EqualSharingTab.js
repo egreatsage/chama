@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { TrendingUp, Calendar, Target, CheckCircle, Users, Clock, FileDown, PlusCircle, X } from 'lucide-react';
+import { TrendingUp, Calendar, Target, CheckCircle, Users, Clock, FileDown, PlusCircle, X, RefreshCwIcon } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -198,9 +198,23 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate, cycles 
       'Total Distributed': cycle.totalCollected,
     }))
     .reverse();
-
+  const handleRefresh = () => {
+    window.location.reload();
+  };
   return (
-    <div className="min-h-screen bg-gray-50 p-1 sm:p-6 lg:p-8">
+
+    <div>
+        <div className='flex justify-end'>
+             <button
+      onClick={handleRefresh}
+      className="inline-flex items-center justify-end my-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+    >
+      <RefreshCwIcon className="w-4 h-4 mr-2" />
+     Refresh Data
+    </button>
+        </div>
+       
+     <div className="min-h-screen bg-gray-50 p-1 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
@@ -298,5 +312,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate, cycles 
       </div>
        <NewCycleModal isOpen={isNewCycleModalOpen} onClose={() => setIsNewCycleModalOpen(false)} onSubmit={handleStartNewCycle} />
     </div>
+    </div>
+   
   );
 }
