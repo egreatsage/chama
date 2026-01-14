@@ -18,7 +18,7 @@ export async function PUT(request, { params }) {
 
     try {
         const user = await getServerSideUser();
-        const { id: chamaId, transactionId } = params;
+        const { id: chamaId, transactionId }  = await params;
         const { amount, category, description } = await request.json();
 
         if (!user) {
@@ -79,7 +79,7 @@ export async function DELETE(request, { params }) {
 
     try {
         const user = await getServerSideUser();
-        const { id: chamaId, transactionId } = params;
+        const { id: chamaId, transactionId }  = await params;
 
         if (!user) {
             await session.abortTransaction();

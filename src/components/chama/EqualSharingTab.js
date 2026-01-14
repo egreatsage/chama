@@ -35,24 +35,24 @@ const NewCycleModal = ({ isOpen, onClose, onSubmit }) => {
                 <form onSubmit={handleSubmit}>
                     <div className="p-6">
                         <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold">Start New Savings Cycle</h3>
+                            <h3 className="text-lg text-gray-900 font-semibold">Start New Savings Cycle</h3>
                             <button type="button" onClick={onClose} className="p-1 rounded-full hover:bg-gray-200">
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5 text-gray-950" />
                             </button>
                         </div>
                         <div className="mt-4 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">New Target Amount (KES)</label>
-                                <input type="number" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required min="1" />
+                                <label className="block my-3 text-sm font-medium text-gray-700">New Target Amount (KES)</label>
+                                <input type="number" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} className="mt-1 block w-full border-gray-300 border px-2 py-2  text-gray-800  rounded-md shadow-sm" required min="1" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">New End Date</label>
-                                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required />
+                                <label className="block my-3 text-sm font-medium text-gray-700">New End Date</label>
+                                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1 block w-full border-gray-300 border px-2 py-2  text-gray-800  rounded-md shadow-sm" required />
                             </div>
                         </div>
                     </div>
                     <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 bg-white border border-gray-300 rounded-md">Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-gray-300 bg-white border border-gray-300 rounded-md">Cancel</button>
                         <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-blue-300">{isSubmitting ? 'Starting...' : 'Start Cycle'}</button>
                     </div>
                 </form>
@@ -71,7 +71,8 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate, cycles 
   const currentBalance = chama.currentBalance || 0;
   const isGoalReached = currentBalance > 0 && currentBalance >= targetAmount;
   // A cycle is complete if the balance is 0 AND there's a target (meaning a cycle was active)
-  const isCycleComplete = cycles.length >= chama.cycleCount && targetAmount > 0;
+  const isCycleComplete = currentBalance === 0 && targetAmount === 0 && cycles.length > 0;
+
 
  const handleDistribute = async () => {
     // Create confirmation toast
@@ -224,7 +225,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate, cycles 
         </div>
         
         {/* Main Content Area: Conditional Rendering */}
-        njndjndjndjndjn
+        
         {isCycleComplete && userRole === 'chairperson' ? (
              <div className="bg-white shadow-xl rounded-2xl p-8 text-center border">
                 <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
@@ -291,7 +292,7 @@ export default function EqualSharingTab({ chama, userRole, onDataUpdate, cycles 
              {/* ... existing history chart and export button ... */}
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Payout History</h2>
-                <button onClick={generateHistoryExcel} className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md">
+                <button onClick={generateHistoryExcel} className="inline-flex text-gray-900 items-center px-4 py-2 border border-gray-300 text-md font-medium rounded-md">
                     <FileDown className="h-4 w-4 mr-2" /> Export
                 </button>
             </div>

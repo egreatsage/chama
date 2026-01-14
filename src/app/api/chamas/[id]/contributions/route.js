@@ -48,7 +48,7 @@ export async function POST(request, { params }) {
   await connectDB();
   try {
     const adminUser = await getServerSideUser(); // The admin performing the action
-    const { id: chamaId } = params;
+    const { id: chamaId }  = await params;
     const { memberId, amount, notes } = await request.json();
 
     if (!memberId || !amount) {

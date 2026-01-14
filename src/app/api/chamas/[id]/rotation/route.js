@@ -46,7 +46,7 @@ export async function PUT(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId } = params;
+        const { id: chamaId }  = await params;
         const { rotationOrder, randomize } = await request.json();
 
         if (!user) {
@@ -98,7 +98,7 @@ export async function POST(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId } = params;
+        const { id: chamaId }  = await params;
 
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

@@ -10,7 +10,7 @@ export async function POST(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId, pollId } = params;
+        const { id: chamaId, pollId }  = await params;
         const { optionIndex } = await request.json();
 
         if (!user) {

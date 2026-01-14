@@ -54,7 +54,7 @@ export async function middleware(request) {
   // Handle auth routes (login/register) - redirect if already logged in
   const isAuthPath = authPaths.some(path => pathname.startsWith(path));
   if (isAuthPath && isAuthenticated) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/profile', request.url));
   }
 
   // Handle public routes - allow access

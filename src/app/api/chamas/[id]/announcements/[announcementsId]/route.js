@@ -13,7 +13,7 @@ export async function PUT(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId, announcementId } = params;
+        const { id: chamaId, announcementId }  = await params;
         const { title, content, isPinned } = await request.json();
 
         if (!user) {
@@ -57,7 +57,7 @@ export async function DELETE(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId, announcementId } = params;
+        const { id: chamaId, announcementId }  = await params;
 
         if (!user) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });

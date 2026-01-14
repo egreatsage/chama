@@ -88,7 +88,7 @@ export async function POST(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId } = params;
+        const { id: chamaId }  = await params;
         const { targetAmount, endDate } = await request.json();
 
         if (!user) {

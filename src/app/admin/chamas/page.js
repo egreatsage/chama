@@ -87,7 +87,7 @@ function ManageChamas() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-gray-50 md:p-6 px-1 py-6">
             <Toaster position="top-right" />
             
             {/* Header */}

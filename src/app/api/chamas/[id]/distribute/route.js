@@ -12,7 +12,7 @@ export async function POST(request, { params }) {
   await connectDB();
   try {
     const user = await getServerSideUser();
-    const { id: chamaId } = params;
+    const { id: chamaId }  = await params;
 
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
