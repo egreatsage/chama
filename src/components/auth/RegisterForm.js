@@ -7,6 +7,7 @@ import Link from 'next/link';
 import ImageUpload from '@/components/ui/ImageUpload';
 import toast from 'react-hot-toast';
 import { CheckCircle, Eye, EyeOff } from 'lucide-react';
+import GoogleLoginButton from './GoogleLoginButton';
 
 // Reusable PasswordInput Component
 const PasswordInput = ({ 
@@ -304,6 +305,15 @@ export default function RegisterForm() {
               )}
             </button>
           </div>
+          <div className="relative my-4">
+             <div className="absolute inset-0 flex items-center">
+               <div className="w-full border-t border-gray-300" />
+             </div>
+             <div className="relative flex justify-center text-sm">
+               <span className="px-2 bg-gray-50 text-gray-500">Or sign up with</span>
+             </div>
+           </div>
+           <GoogleLoginButton text="Sign up with Google" />
         </form>
       </div>
     </div>

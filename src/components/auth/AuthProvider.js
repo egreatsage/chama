@@ -1,4 +1,5 @@
 'use client';
+import { SessionProvider } from 'next-auth/react';
 import { useEffect } from 'react';
 import useAuthStore from '@/store/authStore';
 
@@ -21,5 +22,5 @@ export default function AuthProvider({ children }) {
     );
   }
 
-  return children;
+  return <SessionProvider>{children}</SessionProvider>;
 }
