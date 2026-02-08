@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/dbConnect";
 import { getServerSideUser } from '@/lib/auth';
 import Loan from "@/models/Loan";
 import Chama from "@/models/Chama";
-import { logAuditEvent } from '@/lib/auditLog';
+import { logAuditEvent } from '@/lib/auditLog'
 import { sendGuarantorResponseEmail } from '@/lib/email';
 import User from '@/models/User';
 
