@@ -6,6 +6,16 @@ const RepaymentSchema = new Schema({
     repaidDate: { type: Date },
 }, { _id: false });
 
+const GuarantorSchema = new Schema({
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    status: { 
+        type: String, 
+        enum: ['pending', 'accepted', 'rejected'], 
+        default: 'pending' 
+    },
+    responseDate: { type: Date }
+}, { _id: false });
+
 const LoanSchema = new Schema({
   chamaId: { type: Schema.Types.ObjectId, ref: 'Chama', required: true, index: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -16,6 +26,9 @@ const LoanSchema = new Schema({
     enum: ['pending', 'approved', 'rejected', 'repaid'], 
     default: 'pending' 
   },
+  // NEW: Guarantors Field
+  guarantors: [GuarantorSchema], 
+  
   approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   rejectionReason: { type: String, trim: true },
   repaymentDetails: { type: RepaymentSchema, default: {} }
@@ -23,4 +36,3 @@ const LoanSchema = new Schema({
 
 const Loan = models.Loan || mongoose.model("Loan", LoanSchema);
 export default Loan;
-

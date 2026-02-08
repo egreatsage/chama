@@ -642,6 +642,157 @@ You are receiving this because you are a member of ${chamaName}.
   }
 }
 
+/** 
+//  *Create HTML template for loan guarantor request email
+ * @param {Object} params - Email template parameters
+ * @param {string} params.guarantorName - First name of the guarantor
+ * @param {string} params.requesterName - Full name of the person requesting the loan
+ * @param {number} params.amount - Loan amount
+ * @param {string} params.chamaName - Name of the chama
+ * @param {string} params.reason - Reason for the loan
+ * @returns {string} HTML email template
+ */
+const createGuarantorHtml = ({ guarantorName, requesterName, amount, chamaName, reason }) => {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Loan Guarantee Request</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f4f7fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      <div style="max-width: 650px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); overflow: hidden;">
+        
+        <!-- Header Section -->
+        <div style="background: linear-gradient(135deg, #2563EB 0%, #1e40af 100%); padding: 40px 30px; text-align: center; position: relative;">
+          <div style="background-color: rgba(255, 255, 255, 0.1); width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+            <div style="color: white; font-size: 32px; font-weight: bold;">🤝</div>
+          </div>
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Loan Guarantee Request</h1>
+          <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">A member needs your support</p>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 40px 30px;">
+          
+          <!-- Greeting -->
+          <div style="margin-bottom: 30px;">
+            <h2 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 24px; font-weight: 600;">Hello ${guarantorName},</h2>
+            <p style="color: #5a6c7d; line-height: 1.6; margin: 0; font-size: 16px;">
+              <strong style="color: #2563EB;">${requesterName}</strong> has requested you to be a guarantor for their loan in <strong>${chamaName}</strong>.
+            </p>
+          </div>
+          
+          <!-- Loan Details Card -->
+          <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin: 30px 0; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #2563EB, #1e40af);"></div>
+            
+            <h3 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
+              <span style="background-color: #2563EB; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 12px;">ℹ️</span>
+              Loan Details
+            </h3>
+            
+            <div style="display: grid; gap: 15px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-weight: 500;">Loan Amount:</span>
+                <span style="color: #059669; font-weight: 700; font-size: 20px;">KES ${amount.toLocaleString()}</span>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-weight: 500;">Requested By:</span>
+                <span style="color: #1e293b; font-weight: 600;">${requesterName}</span>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-weight: 500;">Chama:</span>
+                <span style="color: #1e293b; font-weight: 600;">${chamaName}</span>
+              </div>
+              
+              <div style="padding: 12px 0;">
+                <span style="color: #64748b; font-weight: 500; display: block; margin-bottom: 8px;">Reason for Loan:</span>
+                <span style="color: #1e293b; font-weight: 400; line-height: 1.6;">${reason}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Important Notice -->
+          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; border-radius: 0 8px 8px 0; margin: 30px 0;">
+            <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">⚠️ What does being a guarantor mean?</h4>
+            <p style="color: #78350f; margin: 0; line-height: 1.6; font-size: 14px;">
+              As a guarantor, you're vouching for this member's ability to repay the loan. Please carefully consider this request before accepting. You can accept or decline this request in your member portal.
+            </p>
+          </div>
+          
+          <!-- Call to Action -->
+          <div style="text-align: center; margin: 35px 0;">
+            <p style="color: #5a6c7d; margin: 0 0 20px 0; line-height: 1.6; font-size: 16px;">
+              Please log in to the Chama App to <strong>Accept</strong> or <strong>Reject</strong> this guarantee request.
+            </p>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="background: linear-gradient(135deg, #2563EB 0%, #1e40af 100%); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; display: inline-block; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); font-size: 16px;">
+              View Request in Dashboard
+            </a>
+          </div>
+          
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+          <div style="margin-bottom: 20px;">
+            <h4 style="color: #2c3e50; margin: 0 0 10px 0; font-size: 18px; font-weight: 600;">Chama App</h4>
+            <p style="color: #64748b; margin: 0; font-size: 14px; line-height: 1.5;">
+              Building wealth together, one contribution at a time.<br>
+              <strong>Email:</strong> support@chamaapp.com | <strong>Phone:</strong> +254 700 000 000
+            </p>
+          </div>
+          
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 20px;">
+            <p style="color: #94a3b8; font-size: 12px; margin: 0; line-height: 1.4;">
+              This is an automated message. Please do not reply to this email.<br>
+              If you have any questions, contact our support team.
+            </p>
+            <p style="color: #cbd5e1; font-size: 11px; margin: 10px 0 0 0;">
+              © ${new Date().getFullYear()} Chama App. All rights reserved.
+            </p>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- Mobile Responsiveness -->
+      <style>
+        @media only screen and (max-width: 600px) {
+          .email-container {
+            margin: 20px !important;
+            border-radius: 8px !important;
+          }
+          .header-padding {
+            padding: 30px 20px !important;
+          }
+          .content-padding {
+            padding: 30px 20px !important;
+          }
+          .amount-text {
+            font-size: 18px !important;
+          }
+        }
+      </style>
+      
+    </body>
+    </html>
+  `;
+};
+/**
+ * Send loan guarantee request email to a guarantor
+ * @param {Object} params - Email parameters
+ * @param {string} params.to - Guarantor's email address
+ * @param {string} params.guarantorName - Guarantor's first name
+ * @param {string} params.requesterName - Full name of loan requester
+ * @param {number} params.amount - Loan amount
+ * @param {string} params.chamaName - Name of the chama
+ * @param {string} params.reason - Reason for the loan
+ * @returns {Promise<Object>} Success or error result
+ */
 
 /**
  * Sends a beautifully formatted invoice email to a user.
@@ -691,6 +842,40 @@ Our Chama Team
       message: 'Email sending failed', 
       error: error.message 
     };
+  }
+}
+export async function sendGuarantorRequestEmail({ 
+  to, 
+  guarantorName, 
+  requesterName, 
+  amount, 
+  chamaName, 
+  reason 
+}) {
+  const subject = `Loan Guarantee Request from ${requesterName}`;
+  
+  const html = createGuarantorHtml({
+    guarantorName,
+    requesterName,
+    amount,
+    chamaName,
+    reason
+  });
+
+  const mailOptions = {
+    from: `"Chama App" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`🤝 Guarantor request email sent successfully to ${to} from ${requesterName} for KES ${amount}`);
+    return { success: true, message: 'Guarantor request email sent successfully' };
+  } catch (error) {
+    console.error(`❌ Failed to send guarantor request email to ${to}`, error);
+    throw new Error(`Email delivery failed: ${error.message}`);
   }
 }
 export async function sendChamaApprovalEmail({ to, chamaName }) {

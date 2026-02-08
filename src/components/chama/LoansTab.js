@@ -20,6 +20,7 @@ const formatCurrency = (amount) => new Intl.NumberFormat('en-KE', { style: 'curr
 function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = false }) {
     const [rejectionReason, setRejectionReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
+   
 
     const canTakeAction = ['chairperson', 'treasurer'].includes(userRole);
 
@@ -54,11 +55,31 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
             default: return '⏳';
         }
     };
+    const renderGuarantors = () => {
+        if (!loan.guarantors || loan.guarantors.length === 0) return null;
+        return (
+            <div className="mt-2 text-xs text-gray-500">
+                <span className="font-medium">Guarantors:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                    {loan.guarantors.map((g, idx) => (
+                        <span key={idx} className={`px-2 py-0.5 rounded-full border ${
+                            g.status === 'accepted' ? 'bg-green-50 border-green-200 text-green-700' :
+                            g.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-700' :
+                            'bg-yellow-50 border-yellow-200 text-yellow-700'
+                        }`}>
+                            {g.userId?.firstName} {g.userId?.lastName} ({g.status})
+                        </span>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
     // Mobile Card View
     if (isMobile) {
         return (
             <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+                {renderGuarantors()}
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center">
@@ -186,8 +207,14 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
                     <span className="text-sm font-bold text-gray-900">{formatCurrency(loan.amount)}</span>
                 </div>
             </td>
+
             <td className="px-4 lg:px-6 py-4 max-w-xs">
                 <p className="text-sm text-gray-700 line-clamp-2">{loan.reason}</p>
+            </td>
+            <td className="px-4 lg:px-6 py-4 max-w-xs">
+                <p className="text-sm text-gray-700 line-clamp-2">{loan.reason}</p>
+                {/* ADD THIS HERE */}
+                {renderGuarantors()}
             </td>
             <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center text-sm text-gray-500">
@@ -270,6 +297,8 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
     const [newLoanReason, setNewLoanReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [filter, setFilter] = useState('all');
+    const [members, setMembers] = useState([]);
+    const [selectedGuarantors, setSelectedGuarantors] = useState([]);
 
     const fetchLoans = async () => {
         setIsLoading(true);
@@ -288,6 +317,27 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
     useEffect(() => {
         if (chama?._id) {
             fetchLoans();
+        }
+    }, [chama?._id]);
+
+    const fetchMembers = async () => {
+        try {
+            const res = await fetch(`/api/chamas/${chama._id}/members`);
+            if (res.ok) {
+                const data = await res.json();
+                // Filter out the current user (you can't guarantee yourself)
+                setMembers(data.members.filter(m => m.userId._id !== currentUserId));
+            }
+        } catch (error) {
+            console.error("Failed to fetch members", error);
+        }
+    };
+
+    // Update useEffect to fetch members when modal opens or component mounts
+    useEffect(() => {
+        if (chama?._id) {
+            fetchLoans();
+            fetchMembers(); // Fetch members too
         }
     }, [chama?._id]);
 
@@ -310,7 +360,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
             const res = await fetch(`/api/chamas/${chama._id}/loans`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: parseFloat(newLoanAmount), reason: newLoanReason.trim() }),
+                body: JSON.stringify({ amount: parseFloat(newLoanAmount), reason: newLoanReason.trim(),guarantors: selectedGuarantors}),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
@@ -319,6 +369,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
             setNewLoanAmount('');
             setNewLoanReason('');
             fetchLoans();
+            setSelectedGuarantors([]);
         } catch (error) {
             toast.error(error.message, { id: toastId });
         } finally {
@@ -591,6 +642,29 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                                     required
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Select Guarantors (Optional)
+                                </label>
+                                <select 
+                                    multiple
+                                    value={selectedGuarantors}
+                                    onChange={(e) => {
+                                        const options = [...e.target.selectedOptions];
+                                        const values = options.map(option => option.value);
+                                        setSelectedGuarantors(values);
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 h-32" 
+                                >
+                                    {members.map((member) => (
+                                        <option key={member.userId._id} value={member.userId._id}>
+                                            {member.userId.firstName} {member.userId.lastName}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-gray-500 mt-1">Hold Ctrl (Cmd on Mac) to select multiple</p>
+                            </div>
+
                             <div className="flex justify-end space-x-3 pt-4 border-t">
                                 <button 
                                     type="button" 

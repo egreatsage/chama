@@ -32,8 +32,7 @@ export default function ChamaDetailPage() {
   const [activeTab, setActiveTab] = useState('details');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { user: currentUser } = useAuthStore();
-  const params = useParams();
-  const { id }  = await params;
+const { id } = useParams();
 
   const fetchData = async () => {
     if (!id) return;
