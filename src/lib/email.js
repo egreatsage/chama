@@ -652,6 +652,189 @@ You are receiving this because you are a member of ${chamaName}.
  * @param {string} params.reason - Reason for the loan
  * @returns {string} HTML email template
  */
+const createGuarantorResponseHtml = ({ borrowerName, guarantorName, status, amount, chamaName, reason }) => {
+  const isAccepted = status === 'accepted';
+  const statusColor = isAccepted ? '#10b981' : '#ef4444';
+  const statusGradient = isAccepted 
+    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+    : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+  const statusIcon = isAccepted ? '✅' : '❌';
+  const statusText = isAccepted ? 'Accepted' : 'Rejected';
+  const statusMessage = isAccepted 
+    ? 'Great news! Your guarantor has accepted your loan request.' 
+    : 'Your guarantor has declined your loan request.';
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Guarantor Response</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f4f7fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      <div style="max-width: 650px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); overflow: hidden;">
+        
+        <!-- Header Section -->
+        <div style="background: ${statusGradient}; padding: 40px 30px; text-align: center; position: relative;">
+          <div style="background-color: rgba(255, 255, 255, 0.1); width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+            <div style="color: white; font-size: 32px; font-weight: bold;">${statusIcon}</div>
+          </div>
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Guarantor ${statusText}</h1>
+          <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">Update on your loan request</p>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 40px 30px;">
+          
+          <!-- Greeting -->
+          <div style="margin-bottom: 30px;">
+            <h2 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 24px; font-weight: 600;">Hello ${borrowerName},</h2>
+            <p style="color: #5a6c7d; line-height: 1.6; margin: 0; font-size: 16px;">
+              ${statusMessage}
+            </p>
+          </div>
+          
+          <!-- Response Details Card -->
+          <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin: 30px 0; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: ${statusGradient};"></div>
+            
+            <h3 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
+              <span style="background-color: ${statusColor}; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 12px;">${statusIcon}</span>
+              Response Details
+            </h3>
+            
+            <div style="display: grid; gap: 15px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-weight: 500;">Guarantor:</span>
+                <span style="color: #1e293b; font-weight: 600;">${guarantorName}</span>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-weight: 500;">Response:</span>
+                <span style="background-color: ${isAccepted ? '#dcfce7' : '#fee2e2'}; color: ${isAccepted ? '#166534' : '#991b1b'}; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 14px;">
+                  ${statusIcon} ${statusText.toUpperCase()}
+                </span>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-weight: 500;">Loan Amount:</span>
+                <span style="color: #059669; font-weight: 700; font-size: 20px;">KES ${amount.toLocaleString()}</span>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+                <span style="color: #64748b; font-weight: 500;">Chama:</span>
+                <span style="color: #1e293b; font-weight: 600;">${chamaName}</span>
+              </div>
+              ${reason ? `
+              <div style="padding: 12px 0; border-top: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-weight: 500; display: block; margin-bottom: 8px;">Reason:</span>
+                <span style="color: #1e293b; font-weight: 400; line-height: 1.6;">${reason}</span>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+          
+          <!-- Next Steps Notice -->
+          <div style="background-color: ${isAccepted ? '#dbeafe' : '#fef3c7'}; border-left: 4px solid ${isAccepted ? '#2563EB' : '#f59e0b'}; padding: 20px; border-radius: 0 8px 8px 0; margin: 30px 0;">
+            <h4 style="color: ${isAccepted ? '#1e40af' : '#92400e'}; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">
+              ${isAccepted ? '✨ What happens next?' : '💡 What to do next?'}
+            </h4>
+            <p style="color: ${isAccepted ? '#1e3a8a' : '#78350f'}; margin: 0; line-height: 1.6; font-size: 14px;">
+              ${isAccepted 
+                ? 'Your loan request is one step closer to approval. Once all guarantors respond, your loan will be reviewed by the chama administrators.' 
+                : 'You may need to find another guarantor or adjust your loan request. Log in to your dashboard to view all guarantor responses and take action.'}
+            </p>
+          </div>
+          
+          <!-- Call to Action -->
+          <div style="text-align: center; margin: 35px 0;">
+            <p style="color: #5a6c7d; margin: 0 0 20px 0; line-height: 1.6; font-size: 16px;">
+              View the complete status of your loan request in your dashboard.
+            </p>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="background: linear-gradient(135deg, #2563EB 0%, #1e40af 100%); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; display: inline-block; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); font-size: 16px;">
+              Go to Dashboard
+            </a>
+          </div>
+          
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+          <div style="margin-bottom: 20px;">
+            <h4 style="color: #2c3e50; margin: 0 0 10px 0; font-size: 18px; font-weight: 600;">Chama App</h4>
+            <p style="color: #64748b; margin: 0; font-size: 14px; line-height: 1.5;">
+              Building wealth together, one contribution at a time.<br>
+              <strong>Email:</strong> support@chamaapp.com | <strong>Phone:</strong> +254 700 000 000
+            </p>
+          </div>
+          
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 20px;">
+            <p style="color: #94a3b8; font-size: 12px; margin: 0; line-height: 1.4;">
+              This is an automated message. Please do not reply to this email.<br>
+              If you have any questions, contact our support team.
+            </p>
+            <p style="color: #cbd5e1; font-size: 11px; margin: 10px 0 0 0;">
+              © ${new Date().getFullYear()} Chama App. All rights reserved.
+            </p>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- Mobile Responsiveness -->
+      <style>
+        @media only screen and (max-width: 600px) {
+          .email-container {
+            margin: 20px !important;
+            border-radius: 8px !important;
+          }
+          .header-padding {
+            padding: 30px 20px !important;
+          }
+          .content-padding {
+            padding: 30px 20px !important;
+          }
+          .amount-text {
+            font-size: 18px !important;
+          }
+        }
+      </style>
+      
+    </body>
+    </html>
+  `;
+};
+
+/**
+ * Send loan guarantee request email to a guarantor
+ * @param {Object} params - Email parameters
+ * @param {string} params.to - Guarantor's email address
+ * @param {string} params.guarantorName - Guarantor's first name
+ * @param {string} params.requesterName - Full name of loan requester
+ * @param {number} params.amount - Loan amount
+ * @param {string} params.chamaName - Name of the chama
+ * @param {string} params.reason - Reason for the loan
+ * @returns {Promise<Object>} Success or error result
+ */
+
+/**
+ * Sends a beautifully formatted invoice email to a user.
+ * @param {object} options
+ * @param {string} options.to - The recipient's email address.
+ * @param {object} options.invoice - The invoice object from the database.
+ */
+
+/**
+ * Create HTML template for loan guarantor request email
+ * @param {Object} params - Email template parameters
+ * @param {string} params.guarantorName - First name of the guarantor
+ * @param {string} params.requesterName - Full name of the person requesting the loan
+ * @param {number} params.amount - Loan amount
+ * @param {string} params.chamaName - Name of the chama
+ * @param {string} params.reason - Reason for the loan
+ * @returns {string} HTML email template
+ */
 const createGuarantorHtml = ({ guarantorName, requesterName, amount, chamaName, reason }) => {
   return `
     <!DOCTYPE html>
@@ -782,24 +965,56 @@ const createGuarantorHtml = ({ guarantorName, requesterName, amount, chamaName, 
     </html>
   `;
 };
-/**
- * Send loan guarantee request email to a guarantor
- * @param {Object} params - Email parameters
- * @param {string} params.to - Guarantor's email address
- * @param {string} params.guarantorName - Guarantor's first name
- * @param {string} params.requesterName - Full name of loan requester
- * @param {number} params.amount - Loan amount
- * @param {string} params.chamaName - Name of the chama
- * @param {string} params.reason - Reason for the loan
- * @returns {Promise<Object>} Success or error result
- */
 
 /**
- * Sends a beautifully formatted invoice email to a user.
- * @param {object} options
- * @param {string} options.to - The recipient's email address.
- * @param {object} options.invoice - The invoice object from the database.
+ * Send guarantor response notification email to the borrower
+ * @param {Object} params - Email parameters
+ * @param {string} params.to - Borrower's email address
+ * @param {string} params.borrowerName - Borrower's first name
+ * @param {string} params.guarantorName - Guarantor's full name
+ * @param {string} params.status - 'accepted' or 'rejected'
+ * @param {number} params.amount - Loan amount
+ * @param {string} params.chamaName - Name of the chama
+ * @param {string} params.reason - Optional reason for rejection
+ * @returns {Promise<Object>} Success or error result
  */
+export async function sendGuarantorResponseEmail({ 
+  to, 
+  borrowerName, 
+  guarantorName, 
+  status, 
+  amount, 
+  chamaName, 
+  reason 
+}) {
+  const statusText = status === 'accepted' ? 'Accepted' : 'Rejected';
+  const subject = `Guarantor Update: ${guarantorName} ${statusText} Your Request`;
+  
+  const html = createGuarantorResponseHtml({
+    borrowerName,
+    guarantorName,
+    status,
+    amount,
+    chamaName,
+    reason
+  });
+
+  const mailOptions = {
+    from: `"Chama App" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 Guarantor response email sent successfully to ${to} - Status: ${statusText}`);
+    return { success: true, message: 'Guarantor response email sent successfully' };
+  } catch (error) {
+    console.error(`❌ Failed to send guarantor response email to ${to}`, error);
+    throw new Error(`Email delivery failed: ${error.message}`);
+  }
+}
 export async function sendInvoiceEmail({ to, invoice }) {
   const subject = `✅ Payment Confirmed - Invoice ${invoice.invoiceNumber}`;
   const html = createInvoiceHtml(invoice);

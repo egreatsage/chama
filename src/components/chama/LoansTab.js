@@ -74,6 +74,7 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
             </div>
         );
     };
+  
 
     // Mobile Card View
     if (isMobile) {
@@ -376,6 +377,10 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
             setIsSubmitting(false);
         }
     };
+    const myGuaranteeRequests = loans.filter(loan => 
+    loan.guarantors?.some(g => g.userId._id === currentUserId && g.status === 'pending') &&
+    loan.status === 'pending'
+);
     
     const handleLoanAction = async (loanId, status, rejectionReason = '') => {
         const toastId = toast.loading('Processing...');
@@ -409,7 +414,25 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
         approvedAmount: loans.filter(l => l.status === 'approved' || l.status === 'repaid')
                           .reduce((sum, loan) => sum + (loan.amount || 0), 0)
     };
-
+    const handleGuarantorAction = async (loanId, status) => {
+    const toastId = toast.loading(`Processing ${status}...`);
+    try {
+        const res = await fetch(`/api/chamas/${chama._id}/loans/${loanId}/guarantee`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error || "Action failed");
+        
+        toast.success(`Request ${status} successfully!`, { id: toastId });
+        fetchLoans(); // Refresh the list to remove the item
+    } catch (error) {
+        toast.error(error.message, { id: toastId });
+    }
+};
     return (
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
             {/* Header */}
@@ -450,6 +473,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                     <div className="text-2xl font-bold text-blue-700">{formatCurrency(loanStats.approvedAmount)}</div>
                     <div className="text-sm text-gray-600">Total Approved</div>
                 </div>
+              
             </div>
             <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
                     <div className="flex">
@@ -466,6 +490,56 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
 
             {/* Filters */}
             <div className="p-4 sm:p-6 border-b bg-white">
+                  <div>
+                    {/* GUARANTOR REQUESTS SECTION */}
+{myGuaranteeRequests.length > 0 && (
+    <div className="mb-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6">
+        <h3 className="text-lg font-bold text-yellow-800 mb-4 flex items-center">
+            <span className="bg-yellow-200 text-yellow-800 py-1 px-2 rounded text-xs mr-2">Action Required</span>
+            Guarantor Requests ({myGuaranteeRequests.length})
+        </h3>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {myGuaranteeRequests.map((loan) => (
+                <div key={loan._id} className="bg-white p-4 rounded-lg shadow-sm border border-yellow-100">
+                    <div className="flex items-center mb-3">
+                        <img 
+                            src={loan.userId.photoUrl || "https://ui-avatars.com/api/?name=User"} 
+                            className="w-10 h-10 rounded-full mr-3" 
+                        />
+                        <div>
+                            <p className="font-semibold text-gray-900">{loan.userId.firstName} {loan.userId.lastName}</p>
+                            <p className="text-xs text-gray-500">is asking for your guarantee</p>
+                        </div>
+                    </div>
+                    
+                    <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                        <div className="flex justify-between mb-1">
+                            <span>Amount:</span>
+                            <span className="font-bold text-gray-900">{formatCurrency(loan.amount)}</span>
+                        </div>
+                        <p className="italic">"{loan.reason}"</p>
+                    </div>
+
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => handleGuarantorAction(loan._id, 'accepted')}
+                            className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 transition"
+                        >
+                            Accept
+                        </button>
+                        <button
+                            onClick={() => handleGuarantorAction(loan._id, 'rejected')}
+                            className="flex-1 bg-red-100 text-red-700 text-sm py-2 rounded hover:bg-red-200 transition"
+                        >
+                            Decline
+                        </button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+)}
+                </div>
                 <div className="flex flex-wrap gap-2">
                     {['all', 'pending', 'approved', 'repaid', 'rejected'].map((status) => (
                         <button
