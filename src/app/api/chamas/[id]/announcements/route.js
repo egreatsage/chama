@@ -56,7 +56,7 @@ export async function POST(request, { params }) {
     }
 
     const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
-    if (!membership || !['chairperson', 'secretary'].includes(membership.role)) {
+    if (!membership || !['chairperson', 'secretary','treasurer'].includes(membership.role)) {
       return NextResponse.json({ error: "You do not have permission to create announcements." }, { status: 403 });
     }
 

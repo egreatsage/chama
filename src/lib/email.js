@@ -1267,7 +1267,7 @@ export async function sendChamaRejectionEmail({ to, chamaName, rejectionReason }
         <div style="background-color: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #eee;">
           <p style="color: #888; font-size: 12px; margin: 0; line-height: 1.5;">
             © 2025 Chama App. All rights reserved.<br>
-            📧 support@chamaapp.com | 📞 +254-XXX-XXXX | 🌐 www.chamaapp.com
+            📧 support@chamaapp.com | 📞 +25476935210| 🌐 www.chamaapp.com
           </p>
         </div>
         
@@ -1378,7 +1378,7 @@ export async function sendChamaInvitationEmail({ to, inviterName, chamaName, inv
             © 2025 Chama App. Building stronger communities through savings.
           </p>
           <p style="color: #888; font-size: 11px; margin: 0; line-height: 1.4;">
-            📧 support@chamaapp.com | 📞 +254-XXX-XXXX | 🌐 www.chamaapp.com<br>
+            📧 support@chamaapp.com | 📞 +254769375210| 🌐 www.chamaapp.com<br>
             <a href="#" style="color: #007bff; text-decoration: none;">Privacy Policy</a> | 
             <a href="#" style="color: #007bff; text-decoration: none;">Terms of Service</a>
           </p>
