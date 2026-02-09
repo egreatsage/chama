@@ -1,10 +1,10 @@
-// File Path: src/app/api/chamas/[id]/cycles/route.js
+// File: src/app/api/chamas/[id]/cycles/route.js
 import { NextResponse } from 'next/server';
-import { connectDB } from "@/lib/dbConnect";
-import { getServerSideUser } from '@/lib/auth';
-import ChamaMember from "@/models/ChamaMember";
-import ChamaCycle from "@/models/ChamaCycle";
-import User from '@/models/User';
+import { connectDB } from "@/lib/dbConnect"; //
+import { getServerSideUser } from '@/lib/auth'; //
+import ChamaMember from "@/models/ChamaMember"; //
+import ChamaCycle from "@/models/ChamaCycle"; //
+import User from '@/models/User'; //
 
 export async function GET(request, { params }) {
   await connectDB();
@@ -24,20 +24,18 @@ export async function GET(request, { params }) {
 
     const cycles = await ChamaCycle.find({ chamaId })
       .populate({
-        path: 'payouts.userId',
+        // CHANGED: 'payouts.userId' -> 'memberSummaries.userId' to match your Schema
+        path: 'memberSummaries.userId', 
         select: 'firstName lastName photoUrl',
         model: User
       })
       .populate({
-        path:'beneficiaryId',
+        // Added this to show who distributed the cycle (it is in your schema)
+        path: 'distributedBy',
         select: 'firstName lastName photoUrl',
         model: User
       })
-      .populate({
-        path:'recipientId',
-        select: 'firstName lastName photoUrl',
-        model: User
-      })
+      // REMOVED: 'beneficiaryId' and 'recipientId' because they are NOT in your ChamaCycle.js schema
       .sort({ createdAt: -1 });
 
     return NextResponse.json({ cycles });

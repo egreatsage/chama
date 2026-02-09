@@ -193,7 +193,7 @@ const { id } = useParams();
       />
       
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-        <div className="max-w-7xl mx-auto py-4 sm:py-6 lg:py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto py-4 sm:py-6 lg:py-8 px-1 sm:px-6 lg:px-8">
           {/* Enhanced Header */}
           <div className="mb-6 lg:mb-8">
             <ChamaDetailHeader chama={chama} onEditClick={() => setIsEditModalOpen(true)} />
@@ -208,7 +208,7 @@ const { id } = useParams();
                   <TabButton isActive={activeTab === 'details'} onClick={() => setActiveTab('details')} color="blue">
                     {chama.operationType === 'equal_sharing' ? 'Equal_sharing summary' : 'Rotation summary'}
                   </TabButton>
-                  <TabButton isActive={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} color="red">Announcements</TabButton>
+                  
                   <TabButton isActive={activeTab === 'members'} onClick={() => setActiveTab('members')} color="green">
                     <span className="flex items-center space-x-2">
                       <span>Members</span>
@@ -222,9 +222,11 @@ const { id } = useParams();
                     <TabButton isActive={activeTab === 'rotation'} onClick={() => setActiveTab('rotation')} color="green">Rotation</TabButton>
                   )}
                   <TabButton isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} color="red">Finances</TabButton>
-                  <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')} color="red">Rules</TabButton>
+                 
                   <TabButton isActive={activeTab === 'loans'} onClick={() => setActiveTab('loans')} color="green">Loans</TabButton>
                   <TabButton isActive={activeTab === 'voting'} onClick={() => setActiveTab('voting')} color="blue">Voting</TabButton>
+                   <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')} color="red">Rules</TabButton>
+                  <TabButton isActive={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} color="red">Announcements</TabButton>
                   <TabButton isActive={activeTab === 'updates'} onClick={() => setActiveTab('updates')} color="green">Updates</TabButton>
                   <TabButton isActive={activeTab === 'chat'} onClick={() => setActiveTab('chat')} color="blue">Chat</TabButton>
                 </div>

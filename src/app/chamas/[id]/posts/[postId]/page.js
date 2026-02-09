@@ -12,7 +12,7 @@ function PostPageContent() {
     const [isLoading, setIsLoading] = useState(true);
     const params = useParams();
     const router = useRouter();
-    const { id: chamaId, postId }  = await params;
+    const { id: chamaId, postId }  =  params;
 
     useEffect(() => {
         if (chamaId && postId) {

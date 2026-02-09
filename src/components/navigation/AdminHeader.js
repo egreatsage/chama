@@ -22,7 +22,6 @@ const navigation = [
   { name: 'Admin Dashboard', href: '/admin', icon: HomeIcon },
   { name: 'Members', href: '/admin/users', icon: UsersIcon },
   { name: 'Contributions', href: '/admin/contributions', icon: CurrencyDollarIcon },
-  { name: 'Withdrawals', href: '/admin/withdrawals', icon: CurrencyDollarIcon },
   { name: 'Chamas', href: '/admin/chamas', icon: UsersIcon },
   { name: 'Audit Logs', href: '/admin/audit-logs', icon: BookOpenIcon },
 ];

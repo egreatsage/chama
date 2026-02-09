@@ -203,7 +203,7 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10">
-        <ProfilePage/>
+       
         
         {/* Header Section with gradient */}
         <div className="mb-10">

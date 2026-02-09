@@ -10,8 +10,11 @@ import {
     CalendarIcon,
     UserIcon,
     DocumentTextIcon,
-    ExclamationTriangleIcon
-
+    ExclamationTriangleIcon,
+    ShieldCheckIcon,
+    ClockIcon,
+    CheckCircleIcon,
+    XCircleIcon
 } from '@heroicons/react/24/outline';
 import { InformationCircleIcon } from '@heroicons/react/24/solid';
 
@@ -21,7 +24,6 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
     const [rejectionReason, setRejectionReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
    
-
     const canTakeAction = ['chairperson', 'treasurer'].includes(userRole);
 
     const handleRejectClick = () => {
@@ -40,119 +42,151 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'approved': return 'bg-green-100 text-green-800 border border-green-200';
-            case 'repaid': return 'bg-blue-100 text-blue-800 border border-blue-200';
-            case 'rejected': return 'bg-red-100 text-red-800 border border-red-200';
-            default: return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+            case 'approved': return 'bg-green-50 text-green-700 border border-green-200';
+            case 'repaid': return 'bg-blue-50 text-blue-700 border border-blue-200';
+            case 'rejected': return 'bg-red-50 text-red-700 border border-red-200';
+            default: return 'bg-amber-50 text-amber-700 border border-amber-200';
         }
     };
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'approved': return '✅';
-            case 'repaid': return '💰';
-            case 'rejected': return '❌';
-            default: return '⏳';
+            case 'approved': return <CheckCircleIcon className="h-4 w-4" />;
+            case 'repaid': return <CurrencyDollarIcon className="h-4 w-4" />;
+            case 'rejected': return <XCircleIcon className="h-4 w-4" />;
+            default: return <ClockIcon className="h-4 w-4" />;
         }
     };
+
     const renderGuarantors = () => {
         if (!loan.guarantors || loan.guarantors.length === 0) return null;
         return (
-            <div className="mt-2 text-xs text-gray-500">
-                <span className="font-medium">Guarantors:</span>
-                <div className="flex flex-wrap gap-1 mt-1">
+            <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center mb-2">
+                    <ShieldCheckIcon className="h-4 w-4 text-gray-400 mr-1" />
+                    <span className="text-xs font-medium text-gray-600">Guarantors</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
                     {loan.guarantors.map((g, idx) => (
-                        <span key={idx} className={`px-2 py-0.5 rounded-full border ${
-                            g.status === 'accepted' ? 'bg-green-50 border-green-200 text-green-700' :
-                            g.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-700' :
-                            'bg-yellow-50 border-yellow-200 text-yellow-700'
+                        <span key={idx} className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                            g.status === 'accepted' ? 'bg-green-50 border border-green-200 text-green-700' :
+                            g.status === 'rejected' ? 'bg-red-50 border border-red-200 text-red-700' :
+                            'bg-amber-50 border border-amber-200 text-amber-700'
                         }`}>
-                            {g.userId?.firstName} {g.userId?.lastName} ({g.status})
+                            {g.status === 'accepted' && <CheckIcon className="h-3 w-3 mr-1" />}
+                            {g.status === 'rejected' && <XMarkIcon className="h-3 w-3 mr-1" />}
+                            {g.status === 'pending' && <ClockIcon className="h-3 w-3 mr-1" />}
+                            {g.userId?.firstName} {g.userId?.lastName}
                         </span>
                     ))}
                 </div>
             </div>
         );
     };
-  
 
     // Mobile Card View
     if (isMobile) {
         return (
-            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
-                {renderGuarantors()}
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                        <img 
-                            className="h-8 w-8 rounded-full object-cover ring-2 ring-blue-100" 
-                            src={loan.userId.photoUrl || `https://ui-avatars.com/api/?name=${loan.userId.firstName}+${loan.userId.lastName}&background=3b82f6&color=fff`} 
-                            alt={`${loan.userId.firstName} ${loan.userId.lastName}`} 
-                        />
-                        <div className="ml-3">
-                            <p className="text-sm font-semibold text-gray-900">
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center flex-1 min-w-0">
+                        <div className="relative">
+                            <img 
+                                className="h-12 w-12 rounded-full object-cover ring-2 ring-gray-100" 
+                                src={loan.userId.photoUrl || `https://ui-avatars.com/api/?name=${loan.userId.firstName}+${loan.userId.lastName}&background=3b82f6&color=fff`} 
+                                alt={`${loan.userId.firstName} ${loan.userId.lastName}`} 
+                            />
+                            <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
+                                <UserIcon className="h-3 w-3 text-gray-400" />
+                            </div>
+                        </div>
+                        <div className="ml-3 flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">
                                 {loan.userId.firstName} {loan.userId.lastName}
                             </p>
+                            <p className="text-xs text-gray-500">Member</p>
                         </div>
                     </div>
-                    <span className={`px-2 py-1 inline-flex items-center text-xs leading-4 font-semibold rounded-full ${getStatusBadge(loan.status)}`}>
-                        <span className="mr-1">{getStatusIcon(loan.status)}</span>
-                        {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadge(loan.status)} ml-2`}>
+                        {getStatusIcon(loan.status)}
+                        <span className="ml-1">{loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}</span>
                     </span>
                 </div>
 
-                {/* Amount */}
-                <div className="flex items-center mb-2">
-                    <CurrencyDollarIcon className="h-4 w-4 text-green-600 mr-2" />
-                    <span className="text-lg font-bold text-gray-900">{formatCurrency(loan.amount)}</span>
+                {/* Amount - Highlighted */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 mb-4 border border-green-100">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                            <div className="bg-green-100 rounded-full p-2">
+                                <CurrencyDollarIcon className="h-5 w-5 text-green-600" />
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-xs text-gray-600 mb-0.5">Loan Amount</p>
+                                <p className="text-xl font-bold text-gray-900">{formatCurrency(loan.amount)}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Reason */}
-                <div className="flex items-start mb-2">
-                    <DocumentTextIcon className="h-4 w-4 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-gray-700">{loan.reason}</p>
+                <div className="mb-4">
+                    <div className="flex items-start">
+                        <DocumentTextIcon className="h-4 w-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <p className="text-xs font-medium text-gray-600 mb-1">Reason</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{loan.reason}</p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Date */}
-                <div className="flex items-center mb-3">
-                    <CalendarIcon className="h-4 w-4 text-gray-500 mr-2" />
-                    <span className="text-sm text-gray-500">{new Date(loan.createdAt).toLocaleDateString()}</span>
+                <div className="flex items-center mb-4 text-xs text-gray-500">
+                    <CalendarIcon className="h-4 w-4 mr-1.5" />
+                    <span>Requested on {new Date(loan.createdAt).toLocaleDateString('en-KE', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}</span>
                 </div>
+
+                {/* Guarantors */}
+                {renderGuarantors()}
 
                 {/* Actions */}
                 {canTakeAction && loan.status === 'pending' && !isRejecting && (
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 mt-4 pt-4 border-t border-gray-100">
                         <button 
                             onClick={() => handleLoanAction(loan._id, 'approved')} 
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors duration-200"
+                            className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 shadow-sm"
                         >
-                            <CheckIcon className="h-4 w-4 mr-1" />
+                            <CheckIcon className="h-4 w-4 mr-1.5" />
                             Approve
                         </button>
                         <button 
                             onClick={() => setIsRejecting(true)} 
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors duration-200"
+                            className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-sm"
                         >
-                            <XMarkIcon className="h-4 w-4 mr-1" />
+                            <XMarkIcon className="h-4 w-4 mr-1.5" />
                             Reject
                         </button>
                     </div>
                 )}
                 {isRejecting && (
-                    <div className="space-y-2">
+                    <div className="space-y-3 mt-4 pt-4 border-t border-gray-100">
                         <input
                             type="text"
                             value={rejectionReason}
                             onChange={(e) => setRejectionReason(e.target.value)}
                             placeholder="Reason for rejection"
-                            className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                            className="w-full px-3 py-2 border border-gray-300 text-gray-800 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                         />
                         <div className="flex space-x-2">
                             <button 
                                 onClick={handleRejectClick} 
-                                className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors duration-200"
+                                className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 transition-all duration-200"
                             >
-                                <CheckIcon className="h-4 w-4 mr-1"/>
+                                <CheckIcon className="h-4 w-4 mr-1.5"/>
                                 Confirm Reject
                             </button>
                             <button 
@@ -160,7 +194,7 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
                                     setIsRejecting(false);
                                     setRejectionReason('');
                                 }} 
-                                className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200"
+                                className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 text-gray-800 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200"
                             >
                                 Cancel
                             </button>
@@ -170,9 +204,9 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
                 {canTakeAction && loan.status === 'approved' && (
                     <button 
                         onClick={() => handleLoanAction(loan._id, 'repaid')} 
-                        className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+                        className="w-full inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 mt-4 pt-4 border-t border-gray-100 shadow-sm"
                     >
-                        <CurrencyDollarIcon className="h-4 w-4 mr-1" />
+                        <CurrencyDollarIcon className="h-4 w-4 mr-1.5" />
                         Mark as Repaid
                     </button>
                 )}
@@ -182,12 +216,12 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
 
     // Desktop Table Row View
     return (
-        <tr className="hover:bg-gray-50 transition-colors duration-200">
-            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+        <tr className="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100">
+            <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10">
+                    <div className="flex-shrink-0 h-10 w-10 relative">
                         <img 
-                            className="h-10 w-10 rounded-full object-cover ring-2 ring-blue-100" 
+                            className="h-10 w-10 rounded-full object-cover ring-2 ring-gray-100" 
                             src={loan.userId.photoUrl || `https://ui-avatars.com/api/?name=${loan.userId.firstName}+${loan.userId.lastName}&background=3b82f6&color=fff`} 
                             alt={`${loan.userId.firstName} ${loan.userId.lastName}`} 
                         />
@@ -196,54 +230,47 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
                         <div className="text-sm font-semibold text-gray-900">
                             {loan.userId.firstName} {loan.userId.lastName}
                         </div>
-                        <div className="text-xs text-gray-500">
-                            Member
-                        </div>
+                        <div className="text-xs text-gray-500">Member</div>
                     </div>
                 </div>
             </td>
-            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                    <CurrencyDollarIcon className="h-4 w-4 text-green-600 mr-1" />
+            <td className="px-6 py-4 whitespace-nowrap">
+                <div className="inline-flex items-center bg-green-50 px-3 py-1.5 rounded-lg border border-green-100">
+                    <CurrencyDollarIcon className="h-4 w-4 text-green-600 mr-1.5" />
                     <span className="text-sm font-bold text-gray-900">{formatCurrency(loan.amount)}</span>
                 </div>
             </td>
-
-            <td className="px-4 lg:px-6 py-4 max-w-xs">
-                <p className="text-sm text-gray-700 line-clamp-2">{loan.reason}</p>
-            </td>
-            <td className="px-4 lg:px-6 py-4 max-w-xs">
-                <p className="text-sm text-gray-700 line-clamp-2">{loan.reason}</p>
-                {/* ADD THIS HERE */}
+            <td className="px-6 py-4 max-w-xs">
+                <div className="text-sm text-gray-700 line-clamp-2 leading-relaxed">{loan.reason}</div>
                 {renderGuarantors()}
             </td>
-            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+            <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center text-sm text-gray-500">
-                    <CalendarIcon className="h-4 w-4 mr-1" />
-                    {new Date(loan.createdAt).toLocaleDateString()}
+                    <CalendarIcon className="h-4 w-4 mr-1.5 text-gray-400" />
+                    {new Date(loan.createdAt).toLocaleDateString('en-KE', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
             </td>
-            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                <span className={`px-3 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full ${getStatusBadge(loan.status)}`}>
-                    <span className="mr-1">{getStatusIcon(loan.status)}</span>
-                    {loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}
+            <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-full ${getStatusBadge(loan.status)}`}>
+                    {getStatusIcon(loan.status)}
+                    <span className="ml-1.5">{loan.status.charAt(0).toUpperCase() + loan.status.slice(1)}</span>
                 </span>
             </td>
-            <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 {canTakeAction && loan.status === 'pending' && !isRejecting && (
                     <div className="flex items-center justify-end space-x-2">
                         <button 
                             onClick={() => handleLoanAction(loan._id, 'approved')} 
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors duration-200"
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 transition-all duration-200 shadow-sm"
                         >
-                            <CheckIcon className="h-3 w-3 mr-1" />
+                            <CheckIcon className="h-3.5 w-3.5 mr-1" />
                             Approve
                         </button>
                         <button 
                             onClick={() => setIsRejecting(true)} 
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors duration-200"
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 transition-all duration-200 shadow-sm"
                         >
-                            <XMarkIcon className="h-3 w-3 mr-1" />
+                            <XMarkIcon className="h-3.5 w-3.5 mr-1" />
                             Reject
                         </button>
                     </div>
@@ -255,11 +282,11 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
                             value={rejectionReason}
                             onChange={(e) => setRejectionReason(e.target.value)}
                             placeholder="Reason for rejection"
-                            className="flex-1 min-w-0 p-2 border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 text-gray-800 rounded-lg text-xs focus:ring-2 focus:ring-red-500 focus:border-red-500"
                         />
                         <button 
                             onClick={handleRejectClick} 
-                            className="p-1 text-green-600 hover:text-green-800 transition-colors"
+                            className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-all"
                             title="Confirm rejection"
                         >
                             <CheckIcon className="w-4 h-4"/>
@@ -269,7 +296,7 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
                                 setIsRejecting(false);
                                 setRejectionReason('');
                             }} 
-                            className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
+                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-all"
                             title="Cancel"
                         >
                             <XMarkIcon className="w-4 h-4"/>
@@ -279,9 +306,9 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, isMobile = f
                 {canTakeAction && loan.status === 'approved' && (
                     <button 
                         onClick={() => handleLoanAction(loan._id, 'repaid')} 
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 shadow-sm"
                     >
-                        <CurrencyDollarIcon className="h-3 w-3 mr-1" />
+                        <CurrencyDollarIcon className="h-3.5 w-3.5 mr-1" />
                         Mark Repaid
                     </button>
                 )}
@@ -315,18 +342,11 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
         }
     };
 
-    useEffect(() => {
-        if (chama?._id) {
-            fetchLoans();
-        }
-    }, [chama?._id]);
-
     const fetchMembers = async () => {
         try {
             const res = await fetch(`/api/chamas/${chama._id}/members`);
             if (res.ok) {
                 const data = await res.json();
-                // Filter out the current user (you can't guarantee yourself)
                 setMembers(data.members.filter(m => m.userId._id !== currentUserId));
             }
         } catch (error) {
@@ -334,11 +354,10 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
         }
     };
 
-    // Update useEffect to fetch members when modal opens or component mounts
     useEffect(() => {
         if (chama?._id) {
             fetchLoans();
-            fetchMembers(); // Fetch members too
+            fetchMembers();
         }
     }, [chama?._id]);
 
@@ -361,7 +380,11 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
             const res = await fetch(`/api/chamas/${chama._id}/loans`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: parseFloat(newLoanAmount), reason: newLoanReason.trim(),guarantors: selectedGuarantors}),
+                body: JSON.stringify({ 
+                    amount: parseFloat(newLoanAmount), 
+                    reason: newLoanReason.trim(),
+                    guarantors: selectedGuarantors
+                }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
@@ -369,18 +392,19 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
             setIsModalOpen(false);
             setNewLoanAmount('');
             setNewLoanReason('');
-            fetchLoans();
             setSelectedGuarantors([]);
+            fetchLoans();
         } catch (error) {
             toast.error(error.message, { id: toastId });
         } finally {
             setIsSubmitting(false);
         }
     };
+
     const myGuaranteeRequests = loans.filter(loan => 
-    loan.guarantors?.some(g => g.userId._id === currentUserId && g.status === 'pending') &&
-    loan.status === 'pending'
-);
+        loan.guarantors?.some(g => g.userId._id === currentUserId && g.status === 'pending') &&
+        loan.status === 'pending'
+    );
     
     const handleLoanAction = async (loanId, status, rejectionReason = '') => {
         const toastId = toast.loading('Processing...');
@@ -393,6 +417,26 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             toast.success(`Loan ${status} successfully!`, { id: toastId });
+            fetchLoans();
+        } catch (error) {
+            toast.error(error.message, { id: toastId });
+        }
+    };
+
+    const handleGuarantorAction = async (loanId, status) => {
+        const toastId = toast.loading(`Processing ${status}...`);
+        try {
+            const res = await fetch(`/api/chamas/${chama._id}/loans/${loanId}/guarantee`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            
+            const data = await res.json();
+            
+            if (!res.ok) throw new Error(data.error || "Action failed");
+            
+            toast.success(`Request ${status} successfully!`, { id: toastId });
             fetchLoans();
         } catch (error) {
             toast.error(error.message, { id: toastId });
@@ -414,146 +458,165 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
         approvedAmount: loans.filter(l => l.status === 'approved' || l.status === 'repaid')
                           .reduce((sum, loan) => sum + (loan.amount || 0), 0)
     };
-    const handleGuarantorAction = async (loanId, status) => {
-    const toastId = toast.loading(`Processing ${status}...`);
-    try {
-        const res = await fetch(`/api/chamas/${chama._id}/loans/${loanId}/guarantee`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status })
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) throw new Error(data.error || "Action failed");
-        
-        toast.success(`Request ${status} successfully!`, { id: toastId });
-        fetchLoans(); // Refresh the list to remove the item
-    } catch (error) {
-        toast.error(error.message, { id: toastId });
-    }
-};
+
     return (
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 px-6 lg:px-8 py-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center">
-                            <CurrencyDollarIcon className="h-6 w-6 mr-2" />
+                        <h2 className="text-2xl lg:text-3xl font-bold text-white flex items-center">
+                            <div className="bg-white bg-opacity-20 rounded-lg p-2 mr-3">
+                                <CurrencyDollarIcon className="h-6 w-6 lg:h-7 lg:w-7 text-white" />
+                            </div>
                             Loan Management
                         </h2>
-                        <p className="text-blue-100 text-sm mt-1">Manage member loan requests and payments</p>
+                        <p className="text-blue-100 text-sm mt-2">Track and manage member loan requests</p>
                     </div>
                     <button 
                         onClick={() => setIsModalOpen(true)} 
-                        className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 transition-colors duration-200 shadow-sm"
+                        className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-all duration-200 shadow-lg hover:shadow-xl"
                     >
-                        <PlusIcon className="h-4 w-4 mr-2" />
+                        <PlusIcon className="h-5 w-5 mr-2" />
                         Request Loan
                     </button>
                 </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4 sm:p-6 bg-gray-50 border-b">
-                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-                    <div className="text-2xl font-bold text-gray-900">{loanStats.total}</div>
-                    <div className="text-sm text-gray-600">Total Loans</div>
-                </div>
-                <div className="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
-                    <div className="text-2xl font-bold text-yellow-700">{loanStats.pending}</div>
-                    <div className="text-sm text-gray-600">Pending</div>
-                </div>
-                <div className="bg-white p-3 rounded-lg shadow-sm border border-green-200">
-                    <div className="text-2xl font-bold text-green-700">{loanStats.approved}</div>
-                    <div className="text-sm text-gray-600">Approved</div>
-                </div>
-                <div className="bg-white p-3 rounded-lg shadow-sm border border-blue-200">
-                    <div className="text-2xl font-bold text-blue-700">{formatCurrency(loanStats.approvedAmount)}</div>
-                    <div className="text-sm text-gray-600">Total Approved</div>
-                </div>
-              
-            </div>
-            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
-                    <div className="flex">
-                            <div className="flex-shrink-0">
-                                <InformationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-                                 </div>
-                                   <div className="ml-3">
-                                    <p className="text-sm text-red-700">
-                                       Approved loans are subtracted from the total chama balance. Ensure sufficient funds before approving new loans.
-                                    </p>
-                                </div>
-                            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 lg:p-8 bg-gradient-to-br from-gray-50 to-white">
+                <div className="bg-white p-4 lg:p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="bg-blue-100 rounded-lg p-2">
+                            <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+                        </div>
                     </div>
+                    <div className="text-2xl lg:text-3xl font-bold text-gray-900">{loanStats.total}</div>
+                    <div className="text-sm text-gray-600 mt-1">Total Loans</div>
+                </div>
+                
+                <div className="bg-white p-4 lg:p-5 rounded-xl shadow-sm border border-amber-200 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="bg-amber-100 rounded-lg p-2">
+                            <ClockIcon className="h-5 w-5 text-amber-600" />
+                        </div>
+                    </div>
+                    <div className="text-2xl lg:text-3xl font-bold text-amber-700">{loanStats.pending}</div>
+                    <div className="text-sm text-gray-600 mt-1">Pending</div>
+                </div>
+                
+                <div className="bg-white p-4 lg:p-5 rounded-xl shadow-sm border border-green-200 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="bg-green-100 rounded-lg p-2">
+                            <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                        </div>
+                    </div>
+                    <div className="text-2xl lg:text-3xl font-bold text-green-700">{loanStats.approved}</div>
+                    <div className="text-sm text-gray-600 mt-1">Approved</div>
+                </div>
+                
+                <div className="bg-white p-4 lg:p-5 rounded-xl shadow-sm border border-blue-200 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="bg-blue-100 rounded-lg p-2">
+                            <CurrencyDollarIcon className="h-5 w-5 text-blue-600" />
+                        </div>
+                    </div>
+                    <div className="text-xl lg:text-2xl font-bold text-blue-700">{formatCurrency(loanStats.approvedAmount)}</div>
+                    <div className="text-sm text-gray-600 mt-1">Total Approved</div>
+                </div>
+            </div>
+
+            {/* Important Notice */}
+            <div className="px-6 lg:px-8 pb-6">
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-xl shadow-sm">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <InformationCircleIcon className="h-5 w-5 text-red-500" aria-hidden="true" />
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm text-red-800 leading-relaxed">
+                                <span className="font-semibold">Important:</span> Approved loans are subtracted from the total chama balance. Ensure sufficient funds before approving new loans.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Guarantor Requests Section */}
+            {myGuaranteeRequests.length > 0 && (
+                <div className="px-6 lg:px-8 pb-6">
+                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-5 lg:p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-lg font-bold text-amber-900 flex items-center">
+                                <div className="bg-amber-200 text-amber-900 py-1 px-3 rounded-lg text-xs font-bold mr-3">
+                                    ACTION REQUIRED
+                                </div>
+                                Guarantor Requests
+                            </h3>
+                            <span className="bg-amber-200 text-amber-900 py-1 px-3 rounded-full text-xs font-bold">
+                                {myGuaranteeRequests.length}
+                            </span>
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {myGuaranteeRequests.map((loan) => (
+                                <div key={loan._id} className="bg-white p-5 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-all duration-200">
+                                    <div className="flex items-center mb-4">
+                                        <img 
+                                            src={loan.userId.photoUrl || `https://ui-avatars.com/api/?name=${loan.userId.firstName}+${loan.userId.lastName}`} 
+                                            className="w-12 h-12 rounded-full ring-2 ring-amber-100 mr-3" 
+                                            alt="User"
+                                        />
+                                        <div>
+                                            <p className="font-semibold text-gray-900">{loan.userId.firstName} {loan.userId.lastName}</p>
+                                            <p className="text-xs text-gray-500">Requesting your guarantee</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mb-4 text-sm bg-gray-50 p-3 rounded-lg">
+                                        <div className="flex justify-between mb-2">
+                                            <span className="text-gray-600">Amount:</span>
+                                            <span className="font-bold text-gray-900">{formatCurrency(loan.amount)}</span>
+                                        </div>
+                                        <p className="text-gray-700 italic text-xs leading-relaxed">"{loan.reason}"</p>
+                                    </div>
+
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => handleGuarantorAction(loan._id, 'accepted')}
+                                            className="flex-1 bg-green-600 text-white text-sm py-2.5 rounded-lg hover:bg-green-700 transition-all font-medium shadow-sm"
+                                        >
+                                            Accept
+                                        </button>
+                                        <button
+                                            onClick={() => handleGuarantorAction(loan._id, 'rejected')}
+                                            className="flex-1 bg-red-50 text-red-700 text-sm py-2.5 rounded-lg hover:bg-red-100 transition-all font-medium border border-red-200"
+                                        >
+                                            Decline
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Filters */}
-            <div className="p-4 sm:p-6 border-b bg-white">
-                  <div>
-                    {/* GUARANTOR REQUESTS SECTION */}
-{myGuaranteeRequests.length > 0 && (
-    <div className="mb-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6">
-        <h3 className="text-lg font-bold text-yellow-800 mb-4 flex items-center">
-            <span className="bg-yellow-200 text-yellow-800 py-1 px-2 rounded text-xs mr-2">Action Required</span>
-            Guarantor Requests ({myGuaranteeRequests.length})
-        </h3>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {myGuaranteeRequests.map((loan) => (
-                <div key={loan._id} className="bg-white p-4 rounded-lg shadow-sm border border-yellow-100">
-                    <div className="flex items-center mb-3">
-                        <img 
-                            src={loan.userId.photoUrl || "https://ui-avatars.com/api/?name=User"} 
-                            className="w-10 h-10 rounded-full mr-3" 
-                        />
-                        <div>
-                            <p className="font-semibold text-gray-900">{loan.userId.firstName} {loan.userId.lastName}</p>
-                            <p className="text-xs text-gray-500">is asking for your guarantee</p>
-                        </div>
-                    </div>
-                    
-                    <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                        <div className="flex justify-between mb-1">
-                            <span>Amount:</span>
-                            <span className="font-bold text-gray-900">{formatCurrency(loan.amount)}</span>
-                        </div>
-                        <p className="italic">"{loan.reason}"</p>
-                    </div>
-
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => handleGuarantorAction(loan._id, 'accepted')}
-                            className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 transition"
-                        >
-                            Accept
-                        </button>
-                        <button
-                            onClick={() => handleGuarantorAction(loan._id, 'rejected')}
-                            className="flex-1 bg-red-100 text-red-700 text-sm py-2 rounded hover:bg-red-200 transition"
-                        >
-                            Decline
-                        </button>
-                    </div>
-                </div>
-            ))}
-        </div>
-    </div>
-)}
-                </div>
+            <div className="px-6 lg:px-8 pb-6">
                 <div className="flex flex-wrap gap-2">
                     {['all', 'pending', 'approved', 'repaid', 'rejected'].map((status) => (
                         <button
                             key={status}
                             onClick={() => setFilter(status)}
-                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-200 ${
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                                 filter === status
-                                    ? 'bg-blue-600 text-white'
+                                    ? 'bg-blue-600 text-white shadow-md'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
                             {status.charAt(0).toUpperCase() + status.slice(1)}
                             {status !== 'all' && (
-                                <span className="ml-1 bg-white bg-opacity-20 px-1 rounded">
+                                <span className={`ml-2 ${filter === status ? 'bg-white bg-opacity-20' : 'bg-gray-200'} px-2 py-0.5 rounded-full text-xs`}>
                                     {status === 'pending' ? loanStats.pending :
                                      status === 'approved' ? loanStats.approved :
                                      status === 'repaid' ? loanStats.repaid :
@@ -568,47 +631,47 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
             {/* Table/Cards */}
             <div className="overflow-hidden">
                 {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                <div className="hidden md:block overflow-x-auto px-6 lg:px-8 pb-8">
+                    <table className="min-w-full">
+                        <thead className="bg-gray-50 border-y border-gray-200">
                             <tr>
-                                <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                     <div className="flex items-center">
-                                        <UserIcon className="h-4 w-4 mr-1" />
+                                        <UserIcon className="h-4 w-4 mr-2 text-gray-500" />
                                         Member
                                     </div>
                                 </th>
-                                <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                     <div className="flex items-center">
-                                        <CurrencyDollarIcon className="h-4 w-4 mr-1" />
+                                        <CurrencyDollarIcon className="h-4 w-4 mr-2 text-gray-500" />
                                         Amount
                                     </div>
                                 </th>
-                                <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                     <div className="flex items-center">
-                                        <DocumentTextIcon className="h-4 w-4 mr-1" />
-                                        Reason
+                                        <DocumentTextIcon className="h-4 w-4 mr-2 text-gray-500" />
+                                        Reason & Guarantors
                                     </div>
                                 </th>
-                                <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                     <div className="flex items-center">
-                                        <CalendarIcon className="h-4 w-4 mr-1" />
+                                        <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
                                         Date
                                     </div>
                                 </th>
-                                <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="relative px-4 lg:px-6 py-3">
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                                <th className="relative px-6 py-4">
                                     <span className="sr-only">Actions</span>
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white divide-y divide-gray-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="6" className="text-center py-8">
-                                        <div className="flex items-center justify-center">
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                                            <span className="ml-2 text-gray-600">Loading loans...</span>
+                                    <td colSpan="6" className="text-center py-12">
+                                        <div className="flex flex-col items-center">
+                                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+                                            <span className="text-gray-600">Loading loans...</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -624,10 +687,12 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" className="text-center py-8">
+                                    <td colSpan="6" className="text-center py-12">
                                         <div className="flex flex-col items-center">
-                                            <ExclamationTriangleIcon className="h-12 w-12 text-gray-400 mb-3" />
-                                            <p className="text-gray-500">No loan requests found.</p>
+                                            <div className="bg-gray-100 rounded-full p-4 mb-4">
+                                                <ExclamationTriangleIcon className="h-12 w-12 text-gray-400" />
+                                            </div>
+                                            <p className="text-gray-600 font-medium mb-1">No loan requests found</p>
                                             <p className="text-sm text-gray-400">
                                                 {filter !== 'all' ? `No ${filter} loans to display.` : 'Be the first to request a loan!'}
                                             </p>
@@ -640,17 +705,16 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                 </div>
 
                 {/* Mobile Cards */}
-                {/* Mobile Cards */}
-                <div className="md:hidden">
+                <div className="md:hidden px-4 pb-6">
                     {isLoading ? (
-                        <div className="p-8 text-center">
-                            <div className="flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                                <span className="ml-2 text-gray-600">Loading loans...</span>
+                        <div className="py-12 text-center">
+                            <div className="flex flex-col items-center">
+                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+                                <span className="text-gray-600">Loading loans...</span>
                             </div>
                         </div>
                     ) : filteredLoans.length > 0 ? (
-                        <div className="p-4 space-y-4">
+                        <div className="space-y-4">
                             {filteredLoans.map(loan => (
                                 <LoanRow 
                                     key={loan._id} 
@@ -663,61 +727,70 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                             ))}
                         </div>
                     ) : (
-                        <div className="p-8 text-center">
+                        <div className="py-12 text-center">
                             <div className="flex flex-col items-center">
-                                <ExclamationTriangleIcon className="h-12 w-12 text-gray-400 mb-3" />
-                                <p className="text-gray-500">No loan requests found.</p>
+                                <div className="bg-gray-100 rounded-full p-4 mb-4">
+                                    <ExclamationTriangleIcon className="h-12 w-12 text-gray-400" />
+                                </div>
+                                <p className="text-gray-600 font-medium mb-1">No loan requests found</p>
                                 <p className="text-sm text-gray-400">
                                     {filter !== 'all' ? `No ${filter} loans to display.` : 'Be the first to request a loan!'}
                                 </p>
                             </div>
                         </div>
                     )}
-            </div>
+                </div>
             </div>
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-                        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-lg">
-                            <h3 className="text-lg font-semibold text-white">New Loan Request</h3>
-                            <p className="text-blue-100 text-sm">Submit your loan request for approval</p>
+                <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-6 py-5 rounded-t-2xl">
+                            <h3 className="text-xl font-bold text-white flex items-center">
+                                <CurrencyDollarIcon className="h-6 w-6 mr-2" />
+                                New Loan Request
+                            </h3>
+                            <p className="text-blue-100 text-sm mt-1">Submit your loan request for approval</p>
                         </div>
-                        <form onSubmit={handleRequestLoan} className="p-6 space-y-4">
+                        <form onSubmit={handleRequestLoan} className="p-6 space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
                                     Loan Amount (KES) *
                                 </label>
                                 <div className="relative">
-                                    <CurrencyDollarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <CurrencyDollarIcon className="h-5 w-5 text-gray-400" />
+                                    </div>
                                     <input 
                                         type="number" 
                                         min="1"
                                         step="0.01"
                                         value={newLoanAmount} 
                                         onChange={(e) => setNewLoanAmount(e.target.value)} 
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" 
                                         placeholder="Enter amount"
                                         required 
                                     />
                                 </div>
                             </div>
+                            
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
                                     Reason for Loan *
                                 </label>
                                 <textarea 
                                     value={newLoanReason} 
                                     onChange={(e) => setNewLoanReason(e.target.value)} 
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
-                                    rows={3}
+                                    className="w-full px-4 py-3 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" 
+                                    rows={4}
                                     placeholder="Explain why you need this loan"
                                     required
                                 />
                             </div>
+                            
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
                                     Select Guarantors (Optional)
                                 </label>
                                 <select 
@@ -728,32 +801,50 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                                         const values = options.map(option => option.value);
                                         setSelectedGuarantors(values);
                                     }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 h-32" 
+                                    className="w-full px-4 py-3 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 h-32" 
                                 >
                                     {members.map((member) => (
-                                        <option key={member.userId._id} value={member.userId._id}>
+                                        <option key={member.userId._id} value={member.userId._id} className="py-2">
                                             {member.userId.firstName} {member.userId.lastName}
                                         </option>
                                     ))}
                                 </select>
-                                <p className="text-xs text-gray-500 mt-1">Hold Ctrl (Cmd on Mac) to select multiple</p>
+                                <p className="text-xs text-gray-500 mt-2 flex items-center">
+                                    <InformationCircleIcon className="h-4 w-4 mr-1" />
+                                    Hold Ctrl (Cmd on Mac) to select multiple members
+                                </p>
                             </div>
 
-                            <div className="flex justify-end space-x-3 pt-4 border-t">
+                            <div className="flex justify-end space-x-3 pt-5 border-t border-gray-200">
                                 <button 
                                     type="button" 
-                                    onClick={() => setIsModalOpen(false)} 
-                                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200"
+                                    onClick={() => {
+                                        setIsModalOpen(false);
+                                        setNewLoanAmount('');
+                                        setNewLoanReason('');
+                                        setSelectedGuarantors([]);
+                                    }} 
+                                    className="inline-flex items-center px-5 py-2.5 border border-gray-300 text-gray-800 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200"
                                     disabled={isSubmitting}
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     type="submit" 
-                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200 shadow-sm"
+                                    className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={isSubmitting}
                                 >
-                                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Submitting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckIcon className="h-4 w-4 mr-2" />
+                                            Submit Request
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>

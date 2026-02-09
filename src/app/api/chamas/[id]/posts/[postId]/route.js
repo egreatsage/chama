@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/dbConnect";
 import { getServerSideUser } from '@/lib/auth';
 import Post from "@/models/Post";
 import ChamaMember from "@/models/ChamaMember";
+import User from "@/models/User"; // <--- ADD THIS LINE
 
 const canManagePosts = (role) => ['chairperson', 'secretary'].includes(role);
 
@@ -40,6 +41,7 @@ export async function GET(request, { params }) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
 export async function PUT(request, { params }) {
     await connectDB();
     try {
@@ -103,4 +105,3 @@ export async function DELETE(request, { params }) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
-
