@@ -1,49 +1,49 @@
-// lib/auth.js - Fixed version with proper async handling
+// lib/auth.js - Complete version with JWT and NextAuth support
 
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import User from '@/models/User';
 import { connectDB } from './dbConnect';
 
+// Import NextAuth functions
+import { getServerSession } from "next-auth"; 
+import { authOptions } from "@/lib/authOptions";
+
 /**
  * Get authenticated user from server-side context
+ * Supports both custom JWT tokens (manual login) and NextAuth sessions (OAuth login)
  * This function can be used in Server Components, API routes, and Server Actions
  * @returns {Promise<Object|null>} User object or null if not authenticated
  */
 export async function getServerSideUser() {
   try {
-    const cookieStore = await cookies(); // ✅ Now properly awaited
-    const token = cookieStore.get('auth-token')?.value;
-
-    if (!token) {
-      return null;
-    }
-
-    // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
     await connectDB();
+    const cookieStore = await cookies();
     
-    // Find user and exclude password field
-    const user = await User.findById(decoded.userId).select('-password');
-    
-    if (!user) {
-      return null;
+    // --- STRATEGY 1: Check for Custom JWT (Manual Login) ---
+    const token = cookieStore.get('auth-token')?.value;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.userId).select('-password');
+        if (user) return sanitizeUser(user);
+      } catch (err) {
+        // Only log if it's not a missing token (e.g., expired or invalid)
+        if (err.name !== 'JsonWebTokenError') console.error('Custom token error:', err);
+      }
     }
-
-    // Return sanitized user object
-    return {
-      id: user._id.toString(),
-      firstName: user.firstName,
-      lastName: user.lastName,
-      fullName: user.fullName,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      role: user.role,
-      photoUrl: user.photoUrl,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    
+    // --- STRATEGY 2: Check for NextAuth Session (Google Login) ---
+    const session = await getServerSession(authOptions);
+    
+    if (session?.user?.email) {
+      // We fetch the user from DB again to ensure we have the full profile (phone, etc.)
+      // using the email from the verified session
+      const user = await User.findOne({ email: session.user.email }).select('-password');
+      if (user) return sanitizeUser(user);
+    }
+    
+    return null;
   } catch (error) {
     console.error('Server auth check failed:', error);
     
@@ -58,6 +58,26 @@ export async function getServerSideUser() {
     
     return null;
   }
+}
+
+/**
+ * Helper to keep return object consistent
+ * @param {Object} user - User object from database
+ * @returns {Object} Sanitized user object
+ */
+function sanitizeUser(user) {
+  return {
+    id: user._id.toString(),
+    firstName: user.firstName,
+    lastName: user.lastName,
+    fullName: user.fullName,
+    email: user.email,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+    photoUrl: user.photoUrl,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
 }
 
 /**
@@ -96,7 +116,11 @@ export async function verifyToken(request) {
   }
 }
 
-// Alternative version of verifyToken that works with request.cookies (for API routes)
+/**
+ * Alternative version of verifyToken that works with request.cookies (for API routes)
+ * @param {Request} request - Next.js request object
+ * @returns {Promise<Object>} Decoded token payload
+ */
 export async function verifyTokenFromRequest(request) {
   let token;
   
@@ -161,6 +185,7 @@ export class AuthError extends Error {
 
 /**
  * Middleware wrapper for API routes that need authentication
+ * Supports both JWT and NextAuth authentication strategies
  * Usage: export const POST = withAuth(async (request, { user }) => { ... })
  * @param {Function} handler - API route handler
  * @param {Object} options - Options object
@@ -170,16 +195,36 @@ export class AuthError extends Error {
 export function withAuth(handler, options = {}) {
   return async function wrappedHandler(request, context = {}) {
     try {
-      // For API routes, use verifyTokenFromRequest instead
-      const decoded = await verifyTokenFromRequest(request);
+      let user = null;
       
-      // Get full user object if needed
-      await connectDB();
-      const user = await User.findById(decoded.userId).select('-password');
+      // --- STRATEGY 1: Try Custom JWT First ---
+      try {
+        const decoded = await verifyTokenFromRequest(request);
+        await connectDB();
+        const dbUser = await User.findById(decoded.userId).select('-password');
+        if (dbUser) {
+          user = sanitizeUser(dbUser);
+        }
+      } catch (jwtError) {
+        // JWT failed, try NextAuth
+      }
       
+      // --- STRATEGY 2: Fall back to NextAuth Session ---
+      if (!user) {
+        const session = await getServerSession(authOptions);
+        if (session?.user?.email) {
+          await connectDB();
+          const dbUser = await User.findOne({ email: session.user.email }).select('-password');
+          if (dbUser) {
+            user = sanitizeUser(dbUser);
+          }
+        }
+      }
+      
+      // If no user found with either strategy
       if (!user) {
         return Response.json(
-          { message: 'User not found' },
+          { message: 'Authentication required' },
           { status: 401 }
         );
       }
@@ -197,18 +242,7 @@ export function withAuth(handler, options = {}) {
       // Add user to the context
       const enhancedContext = {
         ...context,
-        user: {
-          id: user._id.toString(),
-          firstName: user.firstName,
-          lastName: user.lastName,
-          fullName: user.fullName,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          role: user.role,
-          photoUrl: user.photoUrl,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
+        user,
         params: context.params || {}
       };
       
@@ -230,7 +264,12 @@ export function withAuth(handler, options = {}) {
   };
 }
 
-// Keep all your other existing functions unchanged...
+/**
+ * Check if user has specific role(s)
+ * @param {Object} user - User object
+ * @param {string|Array} roles - Role or array of roles to check
+ * @returns {boolean} True if user has one of the specified roles
+ */
 export function hasRole(user, roles) {
   if (!user || !user.role) {
     return false;
@@ -240,18 +279,39 @@ export function hasRole(user, roles) {
   return allowedRoles.includes(user.role);
 }
 
+/**
+ * Check if user is an admin
+ * @param {Object} user - User object
+ * @returns {boolean} True if user is admin
+ */
 export function isAdmin(user) {
   return hasRole(user, 'admin');
 }
 
+/**
+ * Check if user is a treasurer
+ * @param {Object} user - User object
+ * @returns {boolean} True if user is treasurer
+ */
 export function isTreasurer(user) {
   return hasRole(user, 'treasurer');
 }
 
+/**
+ * Check if user has elevated privileges (admin or treasurer)
+ * @param {Object} user - User object
+ * @returns {boolean} True if user has elevated privileges
+ */
 export function hasElevatedPrivileges(user) {
   return hasRole(user, ['admin', 'treasurer']);
 }
 
+/**
+ * Generate JWT token for a user
+ * @param {Object} user - User object
+ * @param {string} expiresIn - Token expiration time (default: 7 days)
+ * @returns {string} JWT token
+ */
 export function generateToken(user, expiresIn = '7d') {
   return jwt.sign(
     {
@@ -264,6 +324,11 @@ export function generateToken(user, expiresIn = '7d') {
   );
 }
 
+/**
+ * Get user permissions based on role
+ * @param {Object} user - User object
+ * @returns {Object} Permissions object
+ */
 export function getUserPermissions(user) {
   if (!user) {
     return {

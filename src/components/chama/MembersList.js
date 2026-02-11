@@ -1,29 +1,35 @@
-// src/components/chama/MembersList.js
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable'; // Import autoTable directly
+import autoTable from 'jspdf-autotable';
 import {
     MagnifyingGlassIcon,
     UserPlusIcon,
     XMarkIcon,
     UsersIcon,
     DocumentArrowDownIcon,
+    PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 
 export default function MembersList({ members, chama, onActionComplete }) {
-    // const [showInviteModal, setShowInviteModal] = useState(false);
     const [showAddMemberModal, setShowAddMemberModal] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
+    const [showEditRoleModal, setShowEditRoleModal] = useState(false);
+    
     const [addMemberEmail, setAddMemberEmail] = useState('');
     const [inviteEmail, setInviteEmail] = useState('');
+    
+    // State for editing roles
+    const [editingMember, setEditingMember] = useState(null);
+    const [selectedRole, setSelectedRole] = useState('member');
+
     const [isAddingMember, setIsAddingMember] = useState(false);
     const [isInviting, setIsInviting] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [isUpdatingRole, setIsUpdatingRole] = useState(false);
     
+    const [searchQuery, setSearchQuery] = useState('');
 
     const filteredMembers = useMemo(() => {
         if (!searchQuery.trim()) return members;
@@ -39,7 +45,8 @@ export default function MembersList({ members, chama, onActionComplete }) {
                    role.includes(query);
         });
     }, [members, searchQuery]);
-        const handleAddMember = async (e) => {
+
+    const handleAddMember = async (e) => {
         e.preventDefault();
         setIsAddingMember(true);
         const toastId = toast.loading('Adding member...');
@@ -103,6 +110,40 @@ export default function MembersList({ members, chama, onActionComplete }) {
         }
     };
 
+    const openEditRoleModal = (member) => {
+        setEditingMember(member);
+        setSelectedRole(member.role);
+        setShowEditRoleModal(true);
+    };
+
+    const handleUpdateRole = async (e) => {
+        e.preventDefault();
+        if (!editingMember) return;
+
+        setIsUpdatingRole(true);
+        const toastId = toast.loading('Updating role...');
+        try {
+            const res = await fetch(`/api/chamas/${chama._id}/members`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    memberId: editingMember._id, 
+                    newRole: selectedRole 
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            toast.success(data.message, { id: toastId });
+            setShowEditRoleModal(false);
+            setEditingMember(null);
+            onActionComplete();
+        } catch (err) {
+            toast.error(err.message, { id: toastId });
+        } finally {
+            setIsUpdatingRole(false);
+        }
+    };
+
     const clearSearch = () => {
         setSearchQuery('');
     };
@@ -125,23 +166,13 @@ export default function MembersList({ members, chama, onActionComplete }) {
 
         doc.text(`Members of ${chama.name}`, 14, 15);
         
-        // Use autoTable function directly
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: 20,
-            styles: {
-                fontSize: 8,
-                cellPadding: 2,
-            },
-            headStyles: {
-                fillColor: [66, 139, 202],
-                textColor: 255,
-                fontStyle: 'bold'
-            },
-            alternateRowStyles: {
-                fillColor: [245, 245, 245]
-            }
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { fillColor: [66, 139, 202], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [245, 245, 245] }
         });
         
         doc.save(`${chama.name}_members.pdf`);
@@ -175,7 +206,7 @@ export default function MembersList({ members, chama, onActionComplete }) {
                         </button>
                         {chama.userRole === 'chairperson' && (
                             <>
-                            <button
+                                <button
                                     onClick={() => setShowAddMemberModal(true)}
                                     className="inline-flex cursor-pointer items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                                 >
@@ -260,17 +291,33 @@ export default function MembersList({ members, chama, onActionComplete }) {
 
                                 {/* Role and Actions */}
                                 <div className="flex items-center space-x-2 sm:space-x-4 ml-4">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+                                            member.role === 'chairperson' ? 'bg-purple-100 text-purple-800' :
+                                            member.role === 'treasurer' ? 'bg-green-100 text-green-800' :
+                                            member.role === 'secretary' ? 'bg-yellow-100 text-yellow-800' :
+                                            'bg-blue-100 text-blue-800'
+                                        }`}>
                                             {member.role}
                                         </span>
+                                        
                                         {chama.userRole === 'chairperson' && member.role !== 'chairperson' && (
-                                            <button
-                                                onClick={() => handleRemove(member._id)}
-                                                className="text-red-600 hover:text-red-800 text-xs sm:text-sm font-medium transition-colors mt-1 sm:mt-0"
-                                            >
-                                                Remove
-                                            </button>
+                                            <>
+                                                <button
+                                                    onClick={() => openEditRoleModal(member)}
+                                                    className="p-1 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                                    title="Edit Role"
+                                                >
+                                                    <PencilSquareIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRemove(member._id)}
+                                                    className="p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                    title="Remove Member"
+                                                >
+                                                    <XMarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                </button>
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -316,7 +363,78 @@ export default function MembersList({ members, chama, onActionComplete }) {
                 )}
             </div>
 
-            {/* Invite Modal */}
+            {/* Edit Role Modal */}
+            {showEditRoleModal && editingMember && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-medium text-gray-900">Change Member Role</h3>
+                                <button
+                                    onClick={() => {
+                                        setShowEditRoleModal(false);
+                                        setEditingMember(null);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                                >
+                                    <XMarkIcon className="h-6 w-6" />
+                                </button>
+                            </div>
+
+                            <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                                <p className="text-sm text-gray-700">
+                                    Member: <span className="font-semibold">{editingMember.userId?.firstName} {editingMember.userId?.lastName}</span>
+                                </p>
+                                <p className="text-xs text-gray-500">{editingMember.userId?.email}</p>
+                            </div>
+
+                            <form onSubmit={handleUpdateRole} className="space-y-4">
+                                <div>
+                                    <label htmlFor="role-select" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Select New Role
+                                    </label>
+                                    <select
+                                        id="role-select"
+                                        value={selectedRole}
+                                        onChange={(e) => setSelectedRole(e.target.value)}
+                                        className="w-full px-3 py-2 text-gray-800 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    >
+                                        <option value="member">Member</option>
+                                        <option value="treasurer">Treasurer</option>
+                                        <option value="secretary">Secretary</option>
+                                        <option value="chairperson">Chairperson</option>
+                                    </select>
+                                    <p className="mt-2 text-xs text-gray-500">
+                                        Note: Assigning 'Chairperson' will give this member full administrative control.
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 space-y-2 space-y-reverse sm:space-y-0 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowEditRoleModal(false);
+                                            setEditingMember(null);
+                                        }}
+                                        className="w-full cursor-pointer sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isUpdatingRole}
+                                        className="w-full cursor-pointer sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        {isUpdatingRole ? 'Updating...' : 'Update Role'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Existing Add Member Modal */}
             {showAddMemberModal && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
@@ -332,7 +450,7 @@ export default function MembersList({ members, chama, onActionComplete }) {
                             </div>
 
                             <p className="text-sm text-green-600 text-center font-semibold mb-4 bg-green-100 border border-green-200 p-3 rounded">
-                                Add someone who already has a Chama App account to this group.If they don't have an account,
+                                Add someone who already has a Chama App account to this group. If they don't have an account,
                                  use "Invite Member" instead to send them an invitation or Ask them to sign up first.
                             </p>
 
@@ -374,7 +492,7 @@ export default function MembersList({ members, chama, onActionComplete }) {
                 </div>
             )}
             
-                        {/* Invite Member Modal */}
+            {/* Invite Member Modal */}
             {showInviteModal && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">

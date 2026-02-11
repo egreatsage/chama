@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        const { id } = await params; // This is the Chama ID
+        const { id } = await params;
 
         const currentUserMembership = await ChamaMember.findOne({ userId: user.id, chamaId: id });
         if (!currentUserMembership) {
@@ -37,8 +37,7 @@ export async function GET(request, { params }) {
     }
 }
 
-// POST: Invite a new member to the Chama
-// Updated POST function in the API route
+// POST: Invite or Add a new member
 export async function POST(request, { params }) {
     await connectDB();
     try {
@@ -47,8 +46,8 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
         
-        const { id } = await params; // Chama ID
-        const { email, action } = await request.json(); // action can be 'add' or 'invite'
+        const { id } = await params;
+        const { email, action } = await request.json();
 
         if (!email) {
             return NextResponse.json({ error: "Email is required." }, { status: 400 });
@@ -62,7 +61,6 @@ export async function POST(request, { params }) {
         const chama = await Chama.findById(id);
 
         if (action === 'invite') {
-            // Send invitation email only - don't add to database yet
             try {
                 await sendChamaInvitationEmail({
                     to: email,
@@ -78,7 +76,6 @@ export async function POST(request, { params }) {
                 return NextResponse.json({ error: "Failed to send invitation email." }, { status: 500 });
             }
         } else {
-            // Original "add member" logic - add existing user directly
             const userToAdd = await User.findOne({ email });
             if (!userToAdd) {
                 return NextResponse.json({ error: `A user with the email "${email}" was not found. Use "Invite Member" instead to send them an invitation.` }, { status: 404 });
@@ -103,7 +100,7 @@ export async function POST(request, { params }) {
                     memberName: userToAdd.firstName
                 });
             } catch (emailError) {
-                console.error("Member was added, but failed to send notification email:", emailError);
+                console.error("Member added, but email failed:", emailError);
             }
 
             return NextResponse.json({ 
@@ -118,6 +115,56 @@ export async function POST(request, { params }) {
     }
 }
 
+// PUT: Update a member's role
+export async function PUT(request, { params }) {
+    await connectDB();
+    try {
+        const user = await getServerSideUser();
+        if (!user) {
+            return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+        }
+
+        const { id } = await params; // Chama ID
+        const { memberId, newRole } = await request.json();
+
+        if (!memberId || !newRole) {
+            return NextResponse.json({ error: "Member ID and new role are required." }, { status: 400 });
+        }
+
+        // Validate Role
+        const allowedRoles = ['member', 'treasurer', 'secretary', 'chairperson'];
+        if (!allowedRoles.includes(newRole)) {
+            return NextResponse.json({ error: "Invalid role specified." }, { status: 400 });
+        }
+
+        // Check if requester is chairperson
+        const requesterMembership = await ChamaMember.findOne({ userId: user.id, chamaId: id });
+        if (!requesterMembership || requesterMembership.role !== 'chairperson') {
+            return NextResponse.json({ error: "Only the chairperson can update member roles." }, { status: 403 });
+        }
+
+        // Prevent modifying their own role (optional safety check, though sometimes they might want to step down)
+        // For now, we allow it, but we ensure the member belongs to the chama
+        const memberToUpdate = await ChamaMember.findOne({ _id: memberId, chamaId: id });
+        if (!memberToUpdate) {
+            return NextResponse.json({ error: "Member not found in this chama." }, { status: 404 });
+        }
+
+        // Perform Update
+        memberToUpdate.role = newRole;
+        await memberToUpdate.save();
+
+        return NextResponse.json({ 
+            message: "Member role updated successfully.", 
+            member: memberToUpdate 
+        });
+
+    } catch (error) {
+        console.error("Failed to update member role:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
+
 // DELETE: Remove a member from a Chama
 export async function DELETE(request, { params }) {
     await connectDB();
@@ -127,8 +174,8 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        const { id: chamaId } =await params; // Chama ID
-        const { memberId } = await request.json(); // The ID of the ChamaMember record to delete
+        const { id: chamaId } = await params;
+        const { memberId } = await request.json();
 
         if (!memberId) {
             return NextResponse.json({ error: "Member ID is required." }, { status: 400 });

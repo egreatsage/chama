@@ -15,31 +15,25 @@ export const authOptions = {
     strategy: "jwt",
   },
   callbacks: {
+    // 1. SIGN IN: Ensure user exists in DB (Existing code, kept as is)
     async signIn({ user, account, profile }) {
       if (account.provider === "google") {
         await connectDB();
-        
         try {
-          // Check if user exists
           const existingUser = await User.findOne({ email: user.email });
-          
           if (!existingUser) {
-            // Generate a random password since Schema requires it
             const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
-            
-            // Handle names (Google gives given_name/family_name)
             const firstName = profile.given_name || user.name.split(' ')[0] || 'User';
             const lastName = profile.family_name || user.name.split(' ').slice(1).join(' ') || 'Name';
 
-            // Create new user
             await User.create({
               email: user.email,
               firstName: firstName,
               lastName: lastName,
               photoUrl: user.image,
               role: 'user',
-              phoneNumber: `google-${Date.now()}`, // Placeholder as phone is required unique
+              phoneNumber: `google-${Date.now()}`,
               password: hashedPassword,
               emailVerified: true
             });
@@ -52,6 +46,28 @@ export const authOptions = {
       }
       return true;
     },
+    
+    // 2. JWT: Add DB ID and Role to the token
+    async jwt({ token, user }) {
+      if (user) {
+        await connectDB();
+        const dbUser = await User.findOne({ email: user.email });
+        if (dbUser) {
+          token.id = dbUser._id.toString();
+          token.role = dbUser.role;
+        }
+      }
+      return token;
+    },
+
+    // 3. SESSION: Pass ID and Role to the client/session
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+      }
+      return session;
+    }
   },
   pages: {
     signIn: '/login',
