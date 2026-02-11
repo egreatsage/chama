@@ -21,7 +21,7 @@ export default function MembersList({ members, chama, onActionComplete }) {
     const [addMemberEmail, setAddMemberEmail] = useState('');
     const [inviteEmail, setInviteEmail] = useState('');
     
-    // State for editing roles
+    // State for role editing
     const [editingMember, setEditingMember] = useState(null);
     const [selectedRole, setSelectedRole] = useState('member');
 
@@ -301,8 +301,9 @@ export default function MembersList({ members, chama, onActionComplete }) {
                                             {member.role}
                                         </span>
                                         
-                                        {chama.userRole === 'chairperson' && member.role !== 'chairperson' && (
+                                        {chama.userRole === 'chairperson' && (
                                             <>
+                                                {/* Only allow role edits for others, OR allow self-edit if desired (removed self-check here to allow flexibility) */}
                                                 <button
                                                     onClick={() => openEditRoleModal(member)}
                                                     className="p-1 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
@@ -310,13 +311,17 @@ export default function MembersList({ members, chama, onActionComplete }) {
                                                 >
                                                     <PencilSquareIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                                                 </button>
-                                                <button
-                                                    onClick={() => handleRemove(member._id)}
-                                                    className="p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                                    title="Remove Member"
-                                                >
-                                                    <XMarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                                                </button>
+                                                
+                                                {/* Don't allow removing yourself or other chairpersons via the quick remove button if safer */}
+                                                {member.userId._id !== chama.userId && ( 
+                                                    <button
+                                                        onClick={() => handleRemove(member._id)}
+                                                        className="p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                        title="Remove Member"
+                                                    >
+                                                        <XMarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                    </button>
+                                                )}
                                             </>
                                         )}
                                     </div>

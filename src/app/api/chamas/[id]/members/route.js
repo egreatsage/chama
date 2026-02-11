@@ -47,7 +47,7 @@ export async function POST(request, { params }) {
         }
         
         const { id } = await params;
-        const { email, action } = await request.json();
+        const { email, action } = await request.json(); // action can be 'add' or 'invite'
 
         if (!email) {
             return NextResponse.json({ error: "Email is required." }, { status: 400 });
@@ -100,7 +100,7 @@ export async function POST(request, { params }) {
                     memberName: userToAdd.firstName
                 });
             } catch (emailError) {
-                console.error("Member added, but email failed:", emailError);
+                console.error("Member added but email failed:", emailError);
             }
 
             return NextResponse.json({ 
@@ -115,7 +115,7 @@ export async function POST(request, { params }) {
     }
 }
 
-// PUT: Update a member's role
+// PUT: Update a member's role (Enables Handover/Promotion)
 export async function PUT(request, { params }) {
     await connectDB();
     try {
@@ -124,33 +124,31 @@ export async function PUT(request, { params }) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        const { id } = await params; // Chama ID
+        const { id } = await params;
         const { memberId, newRole } = await request.json();
 
         if (!memberId || !newRole) {
             return NextResponse.json({ error: "Member ID and new role are required." }, { status: 400 });
         }
 
-        // Validate Role
         const allowedRoles = ['member', 'treasurer', 'secretary', 'chairperson'];
         if (!allowedRoles.includes(newRole)) {
             return NextResponse.json({ error: "Invalid role specified." }, { status: 400 });
         }
 
-        // Check if requester is chairperson
+        // Verify Requester is Chairperson
         const requesterMembership = await ChamaMember.findOne({ userId: user.id, chamaId: id });
         if (!requesterMembership || requesterMembership.role !== 'chairperson') {
             return NextResponse.json({ error: "Only the chairperson can update member roles." }, { status: 403 });
         }
 
-        // Prevent modifying their own role (optional safety check, though sometimes they might want to step down)
-        // For now, we allow it, but we ensure the member belongs to the chama
+        // Find the member to update
         const memberToUpdate = await ChamaMember.findOne({ _id: memberId, chamaId: id });
         if (!memberToUpdate) {
             return NextResponse.json({ error: "Member not found in this chama." }, { status: 404 });
         }
 
-        // Perform Update
+        // Update the role
         memberToUpdate.role = newRole;
         await memberToUpdate.save();
 
@@ -165,7 +163,7 @@ export async function PUT(request, { params }) {
     }
 }
 
-// DELETE: Remove a member from a Chama
+// DELETE: Remove a member
 export async function DELETE(request, { params }) {
     await connectDB();
     try {
