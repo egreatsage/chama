@@ -1,53 +1,74 @@
-// lib/auth.js - Complete version with JWT and NextAuth support
+
 
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import User from '@/models/User';
 import { connectDB } from './dbConnect';
 
-// Import NextAuth functions
+
 import { getServerSession } from "next-auth"; 
 import { authOptions } from "@/lib/authOptions";
 
 /**
- * Get authenticated user from server-side context
- * Supports both custom JWT tokens (manual login) and NextAuth sessions (OAuth login)
- * This function can be used in Server Components, API routes, and Server Actions
- * @returns {Promise<Object|null>} User object or null if not authenticated
+ @returns {Promise<Object|null>} User object or null if not authenticated
  */
+ 
+
 export async function getServerSideUser() {
   try {
     await connectDB();
     const cookieStore = await cookies();
     
-    // --- STRATEGY 1: Check for Custom JWT (Manual Login) ---
-    const token = cookieStore.get('auth-token')?.value;
-    if (token) {
+
+   if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.userId).select('-password');
-        if (user) return sanitizeUser(user);
-      } catch (err) {
-        // Only log if it's not a missing token (e.g., expired or invalid)
-        if (err.name !== 'JsonWebTokenError') console.error('Custom token error:', err);
+        if (user) {
+          return {
+            id: user._id.toString(),
+            firstName: user.firstName,
+            lastName: user.lastName,
+            fullName: user.fullName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            role: user.role,
+            photoUrl: user.photoUrl,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          };
+        }
+      } catch (e) {
+        // Token invalid, fall through to NextAuth check
       }
     }
     
-    // --- STRATEGY 2: Check for NextAuth Session (Google Login) ---
+
     const session = await getServerSession(authOptions);
     
     if (session?.user?.email) {
-      // We fetch the user from DB again to ensure we have the full profile (phone, etc.)
-      // using the email from the verified session
+
       const user = await User.findOne({ email: session.user.email }).select('-password');
-      if (user) return sanitizeUser(user);
+    if (user) {
+        return {
+          id: user._id.toString(),
+          firstName: user.firstName,
+          lastName: user.lastName,
+          fullName: user.fullName,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          role: user.role,
+          photoUrl: user.photoUrl,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        };
+      }
     }
     
     return null;
   } catch (error) {
     console.error('Server auth check failed:', error);
-    
-    // Log different types of errors for debugging
+
     if (error.name === 'JsonWebTokenError') {
       console.error('Invalid JWT token');
     } else if (error.name === 'TokenExpiredError') {

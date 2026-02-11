@@ -1,39 +1,28 @@
-// File Path: src/app/api/mpesa/stkpush/route.js
-import { cookies } from "next/headers";
+import { NextResponse } from 'next/server';
 import { getAccessToken, getTimestamp } from "@/lib/mpesa";
 import axios from "axios";
 import { connectDB } from "@/lib/dbConnect";
 import Contribution from "@/models/Contribution";
-import jwt from 'jsonwebtoken';
+import { getServerSideUser } from "@/lib/auth"; // Use the helper!
 
 export async function POST(request) {
   try {
     await connectDB();
 
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth-token")?.value;
+    // authenticate using the universal helper (Works for Google AND Email login)
+    const user = await getServerSideUser();
     
-    if (!token) {
+    if (!user) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
     }
 
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (error) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401 });
-    }
+    const userId = user.id; // derived safely from helper
 
-    const userId = decoded.userId;
-
-    // --- ENHANCED DEBUGGING: Log the entire request body ---
     const body = await request.json();
     console.log("Received STK Push Request Body:", body);
     const { phoneNumber, amount, chamaId } = body;
     
-    // --- More Robust Check ---
     if (!phoneNumber || !amount || !chamaId || typeof chamaId !== 'string' || chamaId.trim() === '') {
-      console.error("Validation Error: Missing or invalid fields.", { phoneNumber, amount, chamaId });
       return new Response(JSON.stringify({ error: "Missing required fields (phoneNumber, amount, chamaId)" }), { status: 400 });
     }
 
@@ -76,9 +65,8 @@ export async function POST(request) {
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
-    // --- FIX: Include chamaId when creating the contribution ---
     await Contribution.create({
-      chamaId, // Add this line
+      chamaId,
       userId,
       amount,
       status: "pending",
@@ -93,4 +81,3 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: "Failed to initiate payment" }), { status: 500 });
   }
 }
-
