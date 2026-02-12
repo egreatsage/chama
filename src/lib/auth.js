@@ -1,5 +1,3 @@
-
-
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import User from '@/models/User';
@@ -19,6 +17,8 @@ export async function getServerSideUser() {
     await connectDB();
     const cookieStore = await cookies();
     
+    // Get token from cookie store
+    const token = cookieStore.get('auth-token')?.value;
 
    if (token) {
       try {
