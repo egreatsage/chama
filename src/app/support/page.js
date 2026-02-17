@@ -201,7 +201,7 @@ export default function SupportPage() {
                         type="tel"
                         required
                         className="block w-full px-4 py-3 border-2 border-gray-300 text-gray-800 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-base"
-                        placeholder="+1 (555) 123-4567"
+                        placeholder="+254700000000"
                         value={formData.phone}
                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
                       />
