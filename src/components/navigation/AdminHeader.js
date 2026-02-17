@@ -14,7 +14,8 @@ import {
   UsersIcon,
   BookOpenIcon,
   ArrowLeftOnRectangleIcon,
-  ChevronLeftIcon
+  ChevronLeftIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 import useAuthStore from '@/store/authStore';
 
@@ -24,6 +25,7 @@ const navigation = [
   { name: 'Contributions', href: '/admin/contributions', icon: CurrencyDollarIcon },
   { name: 'Chamas', href: '/admin/chamas', icon: UsersIcon },
   { name: 'Audit Logs', href: '/admin/audit-logs', icon: BookOpenIcon },
+  { name: 'Notifications', href: '/admin/notifications', icon: BellIcon }
 ];
 
 function classNames(...classes) {

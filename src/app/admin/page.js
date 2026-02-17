@@ -1,7 +1,7 @@
 // src/app/admin/page.js
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -9,7 +9,12 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [chamas, setChamas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(null); // ID of chama being processed
+  const [actionLoading, setActionLoading] = useState(null);
+
+  // --- Search & Filter State ---
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
   const router = useRouter();
 
   useEffect(() => {
@@ -18,7 +23,6 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      // Parallel fetch for speed
       const [statsRes, chamasRes] = await Promise.all([
         fetch('/api/admin/dashboard'),
         fetch('/api/admin/chamas')
@@ -38,7 +42,7 @@ export default function AdminDashboard() {
 
   const updateChamaStatus = async (chamaId, newStatus) => {
     if (!confirm(`Are you sure you want to change status to ${newStatus}?`)) return;
-    
+
     setActionLoading(chamaId);
     try {
       const res = await fetch(`/api/admin/chamas/${chamaId}`, {
@@ -48,11 +52,9 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        // Optimistic update
-        setChamas(prev => prev.map(c => 
+        setChamas(prev => prev.map(c =>
           c._id === chamaId ? { ...c, status: newStatus } : c
         ));
-        // Refresh stats as well to reflect active/dormant changes
         const statsRes = await fetch('/api/admin/dashboard');
         if (statsRes.ok) setStats(await statsRes.json());
       } else {
@@ -66,14 +68,49 @@ export default function AdminDashboard() {
     }
   };
 
+  // --- Derived: filtered + searched chamas ---
+  const filteredChamas = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    return chamas.filter((chama) => {
+      // Status filter
+      if (statusFilter !== "all" && chama.status !== statusFilter) return false;
+
+      // Search filter: match chama name OR creator full name / email
+      if (q) {
+        const chamaName = chama.name?.toLowerCase() ?? "";
+        const creatorFirst = chama.createdBy?.firstName?.toLowerCase() ?? "";
+        const creatorLast = chama.createdBy?.lastName?.toLowerCase() ?? "";
+        const creatorEmail = chama.createdBy?.email?.toLowerCase() ?? "";
+        const fullName = `${creatorFirst} ${creatorLast}`;
+
+        const matches =
+          chamaName.includes(q) ||
+          fullName.includes(q) ||
+          creatorEmail.includes(q);
+
+        if (!matches) return false;
+      }
+
+      return true;
+    });
+  }, [chamas, searchQuery, statusFilter]);
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+  };
+
+  const hasActiveFilters = searchQuery.trim() !== "" || statusFilter !== "all";
+
   if (loading) return <div className="p-8 text-center text-gray-500">Loading Dashboard...</div>;
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-8">
-      
+
       {/* 1. At-a-Glance Analytics Widgets */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        
+
         {/* Financial Flow Card */}
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
@@ -128,8 +165,7 @@ export default function AdminDashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Active Chamas</dt>
-                  <dd className="text-lg font-bold text-gray-900">{stats?.chamas?.active} / {stats?.chamas?.total}</dd>
-                  <dd className="text-xs text-gray-500">{stats?.chamas?.dormant} dormant</dd>
+                  <dd className="text-lg font-bold text-gray-900">{stats?.chamas?.active}</dd>
                 </dl>
               </div>
             </div>
@@ -148,7 +184,6 @@ export default function AdminDashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">System Health</dt>
-                  <dd className="text-lg font-bold text-gray-900">MPesa: {stats?.system?.mpesa}</dd>
                   <dd className="text-xs text-gray-500">DB: {stats?.system?.database}</dd>
                 </dl>
               </div>
@@ -165,50 +200,126 @@ export default function AdminDashboard() {
             <p className="mt-1 max-w-2xl text-sm text-gray-500">Monitor and manage all groups on the platform.</p>
           </div>
         </div>
+
+        {/* --- Search & Filter Bar --- */}
+        <div className="px-4 pb-4 sm:px-6 border-t border-gray-100 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by chama name or creator..."
+                className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex gap-2 flex-shrink-0">
+              {["all", "active", "pending", "suspended"].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  className={`px-3 py-2 rounded-md text-xs font-semibold capitalize transition-colors
+                    ${statusFilter === status
+                      ? status === "all"
+                        ? "bg-gray-800 text-white"
+                        : status === "active"
+                        ? "bg-green-600 text-white"
+                        : status === "suspended"
+                        ? "bg-red-600 text-white"
+                        : "bg-yellow-500 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Results summary + clear */}
+          {hasActiveFilters && (
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                Showing <span className="font-medium text-gray-700">{filteredChamas.length}</span> of{" "}
+                <span className="font-medium text-gray-700">{chamas.length}</span> chamas
+              </p>
+              <button
+                onClick={clearFilters}
+                className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Table */}
         <div className="border-t border-gray-200 overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chama Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chairman</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {chamas.map((chama) => (
-                <tr key={chama._id}>
+              {filteredChamas.map((chama) => (
+                <tr key={chama._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{chama.name}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      <HighlightText text={chama.name} query={searchQuery} />
+                    </div>
                     <div className="text-sm text-gray-500">{chama.operationType}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{chama.createdBy?.firstName} {chama.createdBy?.lastName}</div>
-                    <div className="text-sm text-gray-500">{chama.createdBy?.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900 font-semibold">
-                      KES {(chama.currentBalance || 0).toLocaleString()}
-                    </span>
+                    <div className="text-sm text-gray-900">
+                      <HighlightText
+                        text={`${chama.createdBy?.firstName ?? ""} ${chama.createdBy?.lastName ?? ""}`.trim()}
+                        query={searchQuery}
+                      />
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      <HighlightText text={chama.createdBy?.email ?? ""} query={searchQuery} />
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${chama.status === 'active' ? 'bg-green-100 text-green-800' : 
-                        chama.status === 'suspended' ? 'bg-red-100 text-red-800' : 
+                      ${chama.status === 'active' ? 'bg-green-100 text-green-800' :
+                        chama.status === 'suspended' ? 'bg-red-100 text-red-800' :
                         'bg-yellow-100 text-yellow-800'}`}>
                       {chama.status.toUpperCase()}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                     {chama.status !== 'suspended' && (
-                       <button
-                         onClick={() => updateChamaStatus(chama._id, 'suspended')}
-                         disabled={actionLoading === chama._id}
-                         className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                       >
-                         {actionLoading === chama._id ? '...' : 'Suspend'}
-                       </button>
+                      <button
+                        onClick={() => updateChamaStatus(chama._id, 'suspended')}
+                        disabled={actionLoading === chama._id}
+                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                      >
+                        {actionLoading === chama._id ? '...' : 'Suspend'}
+                      </button>
                     )}
                     {(chama.status === 'pending' || chama.status === 'suspended') && (
                       <button
@@ -224,28 +335,48 @@ export default function AdminDashboard() {
               ))}
             </tbody>
           </table>
-          {chamas.length === 0 && (
-            <div className="text-center py-4 text-gray-500">No Chamas found.</div>
+
+          {filteredChamas.length === 0 && (
+            <div className="text-center py-10 text-gray-500">
+              {hasActiveFilters ? (
+                <div>
+                  <p className="font-medium">No chamas match your search.</p>
+                  <button onClick={clearFilters} className="mt-2 text-sm text-blue-600 hover:underline">
+                    Clear filters
+                  </button>
+                </div>
+              ) : (
+                <p>No Chamas found.</p>
+              )}
+            </div>
           )}
         </div>
       </div>
-
-      {/* 3. Legacy Admin Links (Optional: Keep or Remove) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-        <Link href="/admin/users" className="block p-4 bg-gray-50 rounded border hover:bg-gray-100 text-center">
-          <span className="block font-bold">Manage Users</span>
-        </Link>
-        <Link href="/admin/contributions" className="block p-4 bg-gray-50 rounded border hover:bg-gray-100 text-center">
-          <span className="block font-bold">Manage Contributions</span>
-        </Link>
-        <Link href="/admin/withdrawals" className="block p-4 bg-gray-50 rounded border hover:bg-gray-100 text-center">
-          <span className="block font-bold">Manage Withdrawals</span>
-        </Link>
-        <Link href="/admin/reports" className="block p-4 bg-gray-50 rounded border hover:bg-gray-100 text-center">
-          <span className="block font-bold">View Reports</span>
-        </Link>
-      </div>
-
     </div>
+  );
+}
+
+/** Highlights the matching portion of text with a yellow background */
+function HighlightText({ text, query }) {
+  if (!query || !text) return <>{text}</>;
+
+  const q = query.trim();
+  if (!q) return <>{text}</>;
+
+  const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
+  const parts = text.split(regex);
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
   );
 }

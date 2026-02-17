@@ -8,7 +8,8 @@ import {
   ChevronDownIcon, 
   UserIcon, 
   Bars3Icon, 
-  XMarkIcon 
+  XMarkIcon,
+  PhoneIcon
 } from '@heroicons/react/24/outline';
 import useAuthStore from '@/store/authStore';
 import { useRouter } from 'next/navigation';
@@ -46,6 +47,15 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Contact Us — always visible, right side */}
+            <Link
+              href="/support"
+              className="flex items-center text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-400"
+            >
+              <PhoneIcon className="h-4 w-4 mr-1.5" />
+              Contact Us
+            </Link>
+
             {isAuthenticated ? (
               <Menu as="div" className="relative inline-block text-left">
                 {({ close }) => (
@@ -163,6 +173,7 @@ export default function Header() {
               </div>
             )}
           </div>
+          
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
@@ -240,6 +251,14 @@ export default function Header() {
                   Profile
                 </button>
 
+                <button
+                  onClick={() => handleNavigation('/support')}
+                  className="flex items-center w-full text-left px-3 py-2 rounded-md text-base font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                >
+                  <PhoneIcon className="h-5 w-5 mr-2" />
+                  Contact Us
+                </button>
+
                 <div className="border-t border-gray-200 mt-2 pt-2">
                   <button
                     onClick={() => {
@@ -255,11 +274,20 @@ export default function Header() {
             ) : (
               <>
                 <button
+                  onClick={() => handleNavigation('/support')}
+                  className="flex items-center w-full text-left px-3 py-2 rounded-md text-base font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                >
+                  <PhoneIcon className="h-5 w-5 mr-2" />
+                  Contact Us
+                </button>
+                
+                <button
                   onClick={() => handleNavigation('/login')}
                   className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors"
                 >
                   Sign In
                 </button>
+                
                 <button
                   onClick={() => handleNavigation('/register')}
                   className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"

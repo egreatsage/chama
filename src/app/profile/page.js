@@ -11,7 +11,10 @@ function ProfileContent() {
     lastName: user?.lastName || '',
     phoneNumber: user?.phoneNumber || '',
     email: user?.email || '',
-    photoUrl: user?.photoUrl || ''
+    photoUrl: user?.photoUrl || '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   });
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -27,8 +30,27 @@ function ProfileContent() {
   const handleSave = async () => {
     setIsSaving(true);
     setMessage('');
+    if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
+      setMessage('New passwords do not match');
+      return;
+    }
+    setIsSaving(true);
     
     try {
+
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email,
+        photoUrl: formData.photoUrl,
+      };
+
+      if (formData.newPassword) {
+        payload.currentPassword = formData.currentPassword;
+        payload.newPassword = formData.newPassword;
+      }
+
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
@@ -43,6 +65,12 @@ function ProfileContent() {
         updateUser(data.user);
         setIsEditing(false);
         setMessage('Profile updated successfully!');
+        setFormData(prev => ({
+          ...prev,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }));
       } else {
         setMessage(data.message || 'Failed to update profile');
       }
@@ -59,7 +87,10 @@ function ProfileContent() {
       lastName: user?.lastName || '',
       phoneNumber: user?.phoneNumber || '',
       photoUrl: user?.photoUrl || '',
-      email: user?.email || ''
+      email: user?.email || '',
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
     });
     setIsEditing(false);
     setMessage('');
@@ -254,6 +285,25 @@ function ProfileContent() {
                   />
                 </div>
               )}
+              {isEditing && (
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Change Password</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                    <input type="password" name="currentPassword" value={formData.currentPassword} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Required to change" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <input type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="New password" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                    <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Confirm new" />
+                  </div>
+                </div>
+              </div>
+            )}
             </div>
           </div>
           

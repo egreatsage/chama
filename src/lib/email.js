@@ -1496,3 +1496,32 @@ export async function sendChamaAdditionEmail({ to, inviterName, chamaName, membe
     throw new Error(`Email delivery failed: ${error.message}`);
   }
 }
+export async function sendContactMessageEmail({ name, email, phone, subject, message }) {
+  const mailOptions = {
+    from: `"Chama Contact Form" <${process.env.EMAIL_USER}>`,
+    to: process.env.EMAIL_USER, // Sending to the admin/support email
+    replyTo: email.includes('@') ? email : undefined,
+    subject: `Chama App Message: ${subject}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2 style="color: #2563EB;">New Contact Message</h2>
+        <p><strong>From:</strong> ${name}</p>
+        <p><strong>Contact:</strong> ${email}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <div style="background-color: #f4f4f4; padding: 15px; border-radius: 5px; margin-top: 10px;">
+          <p style="white-space: pre-wrap;">${message}</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Contact message email sent from ${name}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to send contact email:', error);
+    return { success: false, error: error.message };
+  }
+}

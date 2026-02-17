@@ -3,7 +3,7 @@ import { jwtVerify } from 'jose';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
-// Define public routes (these don't require authentication)
+// public routes (don't require authentication)
 const publicPaths = [
   '/',
   '/login',
@@ -17,10 +17,10 @@ const publicPaths = [
   '/verify-email'
 ];
 
-// Define auth routes (redirect to dashboard if already logged in)
+//auth routes (redirect to dashboard if already logged in)
 const authPaths = ['/login', '/register'];
 
-// Define protected routes (require authentication)
+// protected routes (require authentication)
 const protectedPaths = [
   '/dashboard',
   '/profile',
