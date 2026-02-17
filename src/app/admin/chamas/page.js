@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Link from 'next/link';
-import { PencilIcon, TrashIcon, EyeIcon, CheckIcon, XMarkIcon, PlusIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, EyeIcon, CheckIcon, XMarkIcon, PlusIcon, MagnifyingGlassIcon, FunnelIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 
 function ManageChamas() {
     const [chamas, setChamas] = useState([]);
@@ -386,7 +386,16 @@ function ManageChamas() {
                                             {chama.createdAt ? new Date(chama.createdAt).toLocaleDateString() : 'N/A'}
                                         </td>
 
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <td className="px-6 py-4 whitespace-nowrap flex gap-2 text-right text-sm font-medium">
+                                           
+                                                                                        <Link
+                                                                                            href={`/admin/chamas/${chama._id}`}
+                                                                                            className="inline-flex items-center px-3 py-1.5 border border-indigo-200 text-xs font-medium rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                                                                                        >
+                                                                                            <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 mr-1" />
+                                                                                            View Details
+                                                                                        </Link>
+                                                             
                                             {editingId === chama._id ? (
                                                 <div className="flex items-center justify-end space-x-2">
                                                     <button

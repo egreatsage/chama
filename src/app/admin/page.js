@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -311,26 +312,15 @@ export default function AdminDashboard() {
                       {chama.status.toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                    {chama.status !== 'suspended' && (
-                      <button
-                        onClick={() => updateChamaStatus(chama._id, 'suspended')}
-                        disabled={actionLoading === chama._id}
-                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                      >
-                        {actionLoading === chama._id ? '...' : 'Suspend'}
-                      </button>
-                    )}
-                    {(chama.status === 'pending' || chama.status === 'suspended') && (
-                      <button
-                        onClick={() => updateChamaStatus(chama._id, 'active')}
-                        disabled={actionLoading === chama._id}
-                        className="text-green-600 hover:text-green-900 disabled:opacity-50 ml-2"
-                      >
-                        {actionLoading === chama._id ? '...' : 'Verify/Activate'}
-                      </button>
-                    )}
-                  </td>
+                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <Link
+                                                href={`/admin/chamas/${chama._id}`}
+                                                className="inline-flex items-center px-3 py-1.5 border border-indigo-200 text-xs font-medium rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                                            >
+                                                <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 mr-1" />
+                                                View Details
+                                            </Link>
+                                        </td>
                 </tr>
               ))}
             </tbody>
