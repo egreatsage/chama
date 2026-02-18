@@ -54,9 +54,10 @@ export async function POST(request, { params }) {
         }
 
         const membership = await ChamaMember.findOne({ userId: inviter.id, chamaId: id });
-        if (!membership || membership.role !== 'chairperson') {
-            return NextResponse.json({ error: "Only the chairperson can add or invite members." }, { status: 403 });
-        }
+        const allowedRoles = ['chairperson', 'secretary']; // Treasurer optional
+if (!membership || !allowedRoles.includes(membership.role)) {
+    return NextResponse.json({ error: "Only the chairperson or secretary can invite members." }, { status: 403 });
+}
 
         const chama = await Chama.findById(id);
 

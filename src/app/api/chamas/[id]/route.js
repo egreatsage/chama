@@ -55,9 +55,19 @@ export async function PUT(request, { params }) {
 
         // Authorization: Ensure the user is the chairperson
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
-        if (!membership || membership.role !== 'chairperson') {
-            return NextResponse.json({ error: "Only the chairperson can edit this Chama." }, { status: 403 });
-        }
+      // Inside PUT function
+const isFinancialChange = body.contributionAmount || body.contributionFrequency;
+
+if (isFinancialChange) {
+   if (!['chairperson', 'treasurer'].includes(membership.role)) {
+       return NextResponse.json({ error: "Only Chair/Treasurer can change financial settings" }, { status: 403 });
+   }
+} else {
+   // General updates
+   if (!['chairperson', 'secretary'].includes(membership.role)) {
+       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+   }
+}
 
         const body = await request.json();
         const { name, description, contributionAmount, contributionFrequency, equalSharing, rotationPayout } = body;
