@@ -22,7 +22,7 @@ import { InformationCircleIcon } from '@heroicons/react/24/solid';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount || 0);
 
-function LoanRow({ loan, userRole, handleLoanAction, currentUserId, onPayClick, isMobile = false }) {
+function LoanRow({ loan, userRole, handleLoanAction, currentUserId,onManualPayClick, onPayClick, isMobile = false }) {
     const [rejectionReason, setRejectionReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
    
@@ -206,10 +206,13 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId, onPayClick, 
                     )}
 
                     {/* Admin Override */}
-                    {canTakeAction && (loan.status === 'approved' || loan.status === 'active') && !isMyLoan && (
-                        <button onClick={() => handleLoanAction(loan._id, 'repaid')} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
-                            Override: Mark Repaid
-                        </button>
+                    {canTakeAction && (loan.status === 'approved' || loan.status === 'active' || loan.status === 'defaulted') && (
+                    <button 
+                       onClick={() => onManualPayClick(loan)} 
+                        className="text-purple-600 hover:text-purple-900 text-xs ml-3 font-medium"
+                        >
+                         Record Offline Payment
+                    </button>
                     )}
                 </div>
             </div>
@@ -359,7 +362,41 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
             fetchMembers();
         }
     }, [chama?._id]);
+    const openManualPayModal = (loan) => {
+    setManualPayLoan(loan);
+    const outstanding = loan.outstandingBalance ?? ((loan.totalExpectedRepayment || loan.amount) + (loan.penaltyAmount || 0) - (loan.totalPaid || 0));
+    setManualPayAmount(outstanding.toString()); // Pre-fill with full outstanding balance (fixes the Mark Repaid issue)
+    setIsManualPayModalOpen(true);
+    };
+    const handleManualPayment = async (e) => {
+    e.preventDefault();
+    if (!manualPayAmount || parseFloat(manualPayAmount) <= 0) return toast.error("Enter a valid amount");
 
+    setIsSubmittingPayment(true);
+    const toastId = toast.loading("Recording payment...");
+
+    try {
+        const res = await fetch(`/api/chamas/${chama._id}/loans/${manualPayLoan._id}/repay`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: parseFloat(manualPayAmount),
+                paymentMethod: 'cash' // Or bank transfer
+            })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        toast.success("Payment recorded successfully!", { id: toastId });
+        setIsManualPayModalOpen(false);
+        fetchLoans(); // Refresh the table to show updated progress and status
+    } catch (error) {
+        toast.error(error.message, { id: toastId });
+    } finally {
+        setIsSubmittingPayment(false);
+    }
+};
     const handleRequestLoan = async (e) => {
         e.preventDefault();
         if (!newLoanAmount || parseFloat(newLoanAmount) <= 0) return toast.error('Enter a valid amount');
@@ -632,6 +669,8 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                                     handleLoanAction={handleLoanAction} 
                                     currentUserId={currentUserId} 
                                     onPayClick={openPaymentModal}
+                                    onManualPayClick={openManualPayModal}
+                                    isMobile={false}
                                 />
                             ))}
                         </tbody>
@@ -647,6 +686,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                             handleLoanAction={handleLoanAction} 
                             currentUserId={currentUserId}
                             onPayClick={openPaymentModal}
+                            onManualPayClick={openManualPayModal} 
                             isMobile={true}
                         />
                     ))}
@@ -716,6 +756,61 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
             )}
 
             {/* Original Request Loan Modal */}
+               {/* --- Manual Payment Modal (For Admins) --- */}
+{isManualPayModalOpen && manualPayLoan && (
+    <div className="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-purple-600 px-6 py-5">
+                <h3 className="text-xl font-bold text-white flex items-center">
+                    <CurrencyDollarIcon className="h-6 w-6 mr-2" />
+                    Record Offline Repayment
+                </h3>
+                <p className="text-purple-100 text-sm mt-1">Record cash or direct bank transfers</p>
+            </div>
+            <form onSubmit={handleManualPayment} className="p-6 space-y-5">
+                <div className="bg-purple-50 text-purple-800 p-3 rounded-lg text-sm mb-4 border border-purple-100">
+                    Member: <span className="font-bold">{manualPayLoan.userId.firstName} {manualPayLoan.userId.lastName}</span><br/>
+                    Outstanding Balance: <span className="font-bold">{formatCurrency(
+                        manualPayLoan.outstandingBalance ?? ((manualPayLoan.totalExpectedRepayment || manualPayLoan.amount) + (manualPayLoan.penaltyAmount || 0) - (manualPayLoan.totalPaid || 0))
+                    )}</span>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Amount Received (KES)</label>
+                    <input 
+                        type="number" 
+                        min="1"
+                        max={manualPayLoan.outstandingBalance ?? undefined}
+                        step="0.01"
+                        value={manualPayAmount} 
+                        onChange={(e) => setManualPayAmount(e.target.value)} 
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" 
+                        required 
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave as full amount to mark the loan as completely repaid.</p>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-5 border-t border-gray-200">
+                    <button 
+                        type="button" 
+                        onClick={() => setIsManualPayModalOpen(false)} 
+                        className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit" 
+                        disabled={isSubmittingPayment}
+                        className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition flex items-center"
+                    >
+                        {isSubmittingPayment ? 'Recording...' : 'Record Payment'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+)}
+            
             {isModalOpen && (
                 <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
