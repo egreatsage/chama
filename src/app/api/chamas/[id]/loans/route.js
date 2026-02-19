@@ -80,13 +80,26 @@ export async function POST(request, { params }) {
     const guarantorIds = formattedGuarantors.map(g => g.userId);
     const guarantorUsers = await User.find({ _id: { $in: guarantorIds } });
 
+    // --- NEW: Calculate Loan Terms ---
+    // These would ideally come from Chama settings
+    const interestRate = 0.10; // 10%
+    const repaymentPeriodInDays = 30;
+
+    const totalExpectedRepayment = amount * (1 + interestRate);
+    const expectedRepaymentDate = new Date();
+    expectedRepaymentDate.setDate(expectedRepaymentDate.getDate() + repaymentPeriodInDays);
+    // --- END NEW ---
+
     // Create the loan
     const newLoan = await Loan.create({
       chamaId,
       userId: user.id,
       amount,
       reason,
-      guarantors: formattedGuarantors
+      guarantors: formattedGuarantors,
+      interestRate: interestRate * 100, // Store as percentage
+      totalExpectedRepayment,
+      expectedRepaymentDate,
     });
 
     // Send email notifications to all guarantors

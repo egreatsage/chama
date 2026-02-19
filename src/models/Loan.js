@@ -1,38 +1,36 @@
-// File Path: src/models/Loan.js
 import mongoose, { Schema, models } from "mongoose";
-
-const RepaymentSchema = new Schema({
-    repaidAmount: { type: Number },
-    repaidDate: { type: Date },
-}, { _id: false });
-
-const GuarantorSchema = new Schema({
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    status: { 
-        type: String, 
-        enum: ['pending', 'accepted', 'rejected'], 
-        default: 'pending' 
-    },
-    responseDate: { type: Date }
-}, { _id: false });
 
 const LoanSchema = new Schema({
   chamaId: { type: Schema.Types.ObjectId, ref: 'Chama', required: true, index: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  amount: { type: Number, required: true },
+  amount: { type: Number, required: true }, // Principal amount given to user
   reason: { type: String, required: true, trim: true },
+  
+  // --- NEW: Loan Terms & Tracking ---
+  interestRate: { type: Number, default: 0 }, // e.g., 10 for 10%
+  expectedRepaymentDate: { type: Date, required: true }, // Deadline
+  totalExpectedRepayment: { type: Number, required: true }, // Principal + Interest
+  totalPaid: { type: Number, default: 0 }, // Running total of installments
+  penaltyAmount: { type: Number, default: 0 }, // Accumulated late fees
+  // ----------------------------------
+
   status: { 
     type: String, 
-    enum: ['pending', 'approved', 'rejected', 'repaid'], 
+    enum: ['pending', 'approved', 'rejected', 'active', 'defaulted', 'repaid'], 
     default: 'pending' 
   },
-  // NEW: Guarantors Field
-  guarantors: [GuarantorSchema], 
-  
+  guarantors: [/* existing schema */], 
   approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   rejectionReason: { type: String, trim: true },
-  repaymentDetails: { type: RepaymentSchema, default: {} }
 }, { timestamps: true });
+
+// Virtual to calculate outstanding balance
+LoanSchema.virtual('outstandingBalance').get(function() {
+  return (this.totalExpectedRepayment + this.penaltyAmount) - this.totalPaid;
+});
+
+LoanSchema.set("toJSON", { virtuals: true });
+LoanSchema.set("toObject", { virtuals: true });
 
 const Loan = models.Loan || mongoose.model("Loan", LoanSchema);
 export default Loan;

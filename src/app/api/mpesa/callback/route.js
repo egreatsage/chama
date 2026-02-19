@@ -6,6 +6,87 @@ import Invoice from "@/models/Invoice";
 import User from "@/models/User";
 import Chama from "@/models/Chama";
 import { logAuditEvent } from "@/lib/auditLog";
+import Transaction from "@/models/Transaction";
+import Loan from "@/models/Loan";
+
+// Helper function to handle successful contribution logic
+async function handleSuccessfulContribution(contribution, amount, receipt, phone, date) {
+    contribution.status = "confirmed";
+    contribution.mpesaReceiptNumber = receipt;
+    contribution.transactionDate = date;
+    contribution.phoneNumber = phone;
+    contribution.amount = amount;
+    await contribution.save();
+
+    await logAuditEvent({
+        chamaId: contribution.chamaId,
+        userId: contribution.userId,
+        action: 'MPESA_CONTRIBUTION_SUCCESS',
+        category: 'CONTRIBUTION',
+        amount: amount,
+        description: `M-Pesa contribution successful. Receipt: ${receipt}`,
+        after: contribution.toObject()
+    });
+
+    if (contribution.chamaId && amount > 0) {
+        await Chama.findByIdAndUpdate(contribution.chamaId, {
+            $inc: { currentBalance: amount, totalContributions: amount }
+        });
+    }
+
+    try {
+        const user = await User.findById(contribution.userId);
+        if (user) {
+            const newInvoice = await Invoice.create({
+                userId: contribution.userId,
+                contributionId: contribution._id,
+                invoiceNumber: `INV-${receipt}`,
+                amount: amount,
+                status: "paid",
+            });
+            await sendInvoiceEmail({ to: user.email, invoice: newInvoice });
+        }
+    } catch (error) {
+        console.error("Error creating invoice or sending email:", error);
+    }
+}
+
+// Helper function to handle successful loan repayment logic
+async function handleSuccessfulLoanRepayment(transaction, amount, receipt) {
+    transaction.status = "completed"; // Assuming 'completed' is the success status
+    transaction.mpesaReceiptNumber = receipt; // Add receipt if schema supports it
+    await transaction.save();
+
+    const loan = await Loan.findById(transaction.referenceId);
+    if (!loan) {
+        console.error(`CRITICAL: Loan not found for transaction ${transaction._id}`);
+        return;
+    }
+
+    loan.totalPaid += amount;
+    // Optional: Check if the loan is fully repaid
+    if (loan.totalPaid >= loan.totalExpectedRepayment) {
+        loan.status = 'repaid';
+    }
+    await loan.save();
+
+    await logAuditEvent({
+        chamaId: loan.chamaId,
+        userId: transaction.userId,
+        action: 'LOAN_REPAYMENT_SUCCESS',
+        category: 'LOAN',
+        amount: amount,
+        description: `Loan repayment of ${amount} successful via M-Pesa. Receipt: ${receipt}`,
+        after: loan.toObject()
+    });
+    
+    // Also increase the chama's main balance
+    if (loan.chamaId && amount > 0) {
+        await Chama.findByIdAndUpdate(loan.chamaId, {
+            $inc: { currentBalance: amount }
+        });
+    }
+}
 
 export async function POST(request) {
   await connectDB();
@@ -14,90 +95,59 @@ export async function POST(request) {
     const { Body } = callbackData;
 
     if (!Body?.stkCallback) {
-      console.error("Invalid callback format received.");
       return new Response(JSON.stringify({ error: "Invalid callback format" }), { status: 400 });
     }
 
     const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback;
+
+    // Try to find a contribution OR a loan transaction
     const contribution = await Contribution.findOne({ checkoutRequestId: CheckoutRequestID });
+    const loanTransaction = await Transaction.findOne({ checkoutRequestId: CheckoutRequestID });
 
-    if (!contribution) {
-      console.error(`Contribution not found for CheckoutRequestID: ${CheckoutRequestID}`);
-          await logAuditEvent({
-          action: 'MPESA_CONTRIBUTION_FAILURE',
-          category: 'CONTRIBUTION',
-          description: `M-Pesa callback received for an unknown CheckoutRequestID: ${CheckoutRequestID}. Reason: ${ResultDesc}`,
+    if (!contribution && !loanTransaction) {
+      console.error(`No record found for CheckoutRequestID: ${CheckoutRequestID}`);
+      await logAuditEvent({
+          action: 'MPESA_CALLBACK_UNKNOWN_ID',
+          category: 'PAYMENT',
+          description: `M-Pesa callback received for an unknown CheckoutRequestID: ${CheckoutRequestID}.`,
       });
-      return new Response(JSON.stringify({ error: "Contribution not found" }), { status: 404 });
+      return new Response(JSON.stringify({ error: "Transaction record not found" }), { status: 404 });
     }
 
-    if (ResultCode === 0) {
-      // Payment successful
-      const metadata = CallbackMetadata?.Item || [];
-      const amount = parseFloat(metadata.find((i) => i.Name === "Amount")?.Value || 0);
-      const receipt = metadata.find((i) => i.Name === "MpesaReceiptNumber")?.Value;
-      const phone = metadata.find((i) => i.Name === "PhoneNumber")?.Value;
-      const date = metadata.find((i) => i.Name === "TransactionDate")?.Value;
+    const metadata = CallbackMetadata?.Item || [];
+    const amount = parseFloat(metadata.find((i) => i.Name === "Amount")?.Value || 0);
+    const receipt = metadata.find((i) => i.Name === "MpesaReceiptNumber")?.Value;
+    const phone = metadata.find((i) => i.Name === "PhoneNumber")?.Value;
+    const date = metadata.find((i) => i.Name === "TransactionDate")?.Value;
 
-      contribution.status = "confirmed";
-      contribution.mpesaReceiptNumber = receipt;
-      contribution.transactionDate = date;
-      contribution.phoneNumber = phone;
-      contribution.amount = amount;
-      await contribution.save();
-
-      await logAuditEvent({
-          chamaId: contribution.chamaId,
-          userId: contribution.userId,
-          action: 'MPESA_CONTRIBUTION_SUCCESS',
-          category: 'CONTRIBUTION',
-          amount: amount,
-          description: `M-Pesa contribution successful. Receipt: ${receipt}`,
-          after: contribution.toObject()
-      });
-
-      // --- ROBUSTNESS FIX: Ensure chamaId exists before updating the balance ---
-      if (contribution.chamaId && amount > 0) {
-        await Chama.findByIdAndUpdate(contribution.chamaId, {
-          $inc: { currentBalance: amount } // Use the parsed amount
-        });
-        console.log(`Successfully updated balance for Chama ID: ${contribution.chamaId}`);
-     
-      } else {
-        console.error(`CRITICAL: Contribution ${contribution._id} was confirmed but is missing a chamaId. Balance not updated.`);
+    if (ResultCode === 0) { // Payment was successful
+      if (contribution) {
+        await handleSuccessfulContribution(contribution, amount, receipt, phone, date);
+      } else if (loanTransaction) {
+        await handleSuccessfulLoanRepayment(loanTransaction, amount, receipt);
       }
-      // --- END OF FIX ---
-
-      try {
-        const user = await User.findById(contribution.userId);
-        if (user) {
-          const newInvoice = await Invoice.create({
-            userId: contribution.userId,
-            contributionId: contribution._id,
-            invoiceNumber: `INV-${receipt}`,
-            amount: amount,
-            status: "paid",
-          });
-          await sendInvoiceEmail({ to: user.email, invoice: newInvoice });
-        }
-      } catch (error) {
-        console.error("Error creating invoice or sending email:", error);
-      }
-    } else {
-      contribution.status = "failed";
-      contribution.failureReason = ResultDesc;
-      await contribution.save();
-      await logAuditEvent({
-          chamaId: contribution.chamaId,
-          userId: contribution.userId,
-          action: 'MPESA_CONTRIBUTION_FAILURE',
-          category: 'CONTRIBUTION',
-          description: `M-Pesa contribution failed. Reason: ${ResultDesc}`,
-          after: contribution.toObject()
-      });
+    } else { // Payment failed
+      const failureData = {
+        status: 'failed',
+        failureReason: ResultDesc
+      };
+      
+      const record = contribution || loanTransaction;
+      const logDetails = {
+          chamaId: record.chamaId,
+          userId: record.userId,
+          action: contribution ? 'MPESA_CONTRIBUTION_FAILURE' : 'LOAN_REPAYMENT_FAILURE',
+          category: contribution ? 'CONTRIBUTION' : 'LOAN',
+          description: `M-Pesa payment failed. Reason: ${ResultDesc}`,
+          after: record.toObject()
+      };
+      
+      await record.updateOne(failureData);
+      await logAuditEvent(logDetails);
     }
 
-    return new Response(JSON.stringify({ message: "Callback processed" }), { status: 200 });
+    return new Response(JSON.stringify({ message: "Callback processed successfully" }), { status: 200 });
+
   } catch (error) {
     console.error("Callback Error:", error);
     return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
