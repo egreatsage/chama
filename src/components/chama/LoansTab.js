@@ -7,7 +7,7 @@ import {
     PlusIcon, 
     CheckIcon, 
     XMarkIcon, 
-    CurrencyDollarIcon,
+    BanknotesIcon,
     CalendarIcon,
     UserIcon,
     DocumentTextIcon,
@@ -16,12 +16,16 @@ import {
     ClockIcon,
     CheckCircleIcon,
     XCircleIcon,
-    DevicePhoneMobileIcon // Added for M-Pesa
+    DevicePhoneMobileIcon 
 } from '@heroicons/react/24/outline';
 import { InformationCircleIcon } from '@heroicons/react/24/solid';
 
-const formatCurrency = (amount) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount || 0);
-
+const formatCurrency = (amount) => new Intl.NumberFormat('en-KE', { 
+    style: 'currency', 
+    currency: 'KES',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0 
+}).format(amount || 0);
 function LoanRow({ loan, userRole, handleLoanAction, currentUserId,onManualPayClick, onPayClick, isMobile = false }) {
     const [rejectionReason, setRejectionReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
@@ -29,7 +33,7 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId,onManualPayCl
     const canTakeAction = ['chairperson', 'treasurer'].includes(userRole);
     const isMyLoan = loan.userId._id === currentUserId; 
 
-    // Enhanced Calculations
+    
     const totalExpected = loan.totalExpectedRepayment || loan.amount;
     const totalPaid = loan.totalPaid || 0;
     const penalty = loan.penaltyAmount || 0;
@@ -70,7 +74,7 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId,onManualPayCl
         switch (status) {
             case 'approved': 
             case 'active': return <CheckCircleIcon className="h-4 w-4" />;
-            case 'repaid': return <CurrencyDollarIcon className="h-4 w-4" />;
+            case 'repaid': return <BanknotesIcon className="h-4 w-4" />;
             case 'rejected': return <XCircleIcon className="h-4 w-4" />;
             case 'defaulted': return <ExclamationTriangleIcon className="h-4 w-4" />;
             default: return <ClockIcon className="h-4 w-4" />;
@@ -103,7 +107,7 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId,onManualPayCl
         );
     };
 
-    // Mobile Card View
+   
     if (isMobile) {
         return (
             <div className={`bg-white border ${isOverdue ? 'border-red-200' : 'border-gray-200'} rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300`}>
@@ -219,7 +223,7 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId,onManualPayCl
         );
     }
 
-    // Desktop Table Row View
+   
     return (
         <tr className={`hover:bg-gray-50 transition-colors duration-150 border-b ${isOverdue ? 'border-red-100' : 'border-gray-100'}`}>
             <td className="px-6 py-4 whitespace-nowrap">
@@ -297,11 +301,14 @@ function LoanRow({ loan, userRole, handleLoanAction, currentUserId,onManualPayCl
                 )}
 
                 {/* Admin Override */}
-                {canTakeAction && (loan.status === 'approved' || loan.status === 'active') && !isMyLoan && (
-                    <button onClick={() => handleLoanAction(loan._id, 'repaid')} className="text-blue-600 hover:text-blue-900 text-xs ml-3">
-                        Mark Repaid
-                    </button>
-                )}
+                {canTakeAction && (loan.status === 'approved' || loan.status === 'active' || loan.status === 'defaulted') && (
+    <button 
+        onClick={() => onManualPayClick(loan)} 
+        className="text-purple-600 hover:text-purple-900 text-xs ml-3 font-medium"
+    >
+        Record Offline Payment
+    </button>
+)}
             </td>
         </tr>
     );
@@ -365,7 +372,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
     const openManualPayModal = (loan) => {
     setManualPayLoan(loan);
     const outstanding = loan.outstandingBalance ?? ((loan.totalExpectedRepayment || loan.amount) + (loan.penaltyAmount || 0) - (loan.totalPaid || 0));
-    setManualPayAmount(outstanding.toString()); // Pre-fill with full outstanding balance (fixes the Mark Repaid issue)
+    setManualPayAmount(Math.round(outstanding).toString());
     setIsManualPayModalOpen(true);
     };
     const handleManualPayment = async (e) => {
@@ -467,11 +474,11 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
         }
     };
 
-    // NEW: Handle user clicking "Pay" on a specific loan
+   
     const openPaymentModal = (loan) => {
         setPaymentLoan(loan);
         const outstanding = loan.outstandingBalance ?? ((loan.totalExpectedRepayment || loan.amount) + (loan.penaltyAmount || 0) - (loan.totalPaid || 0));
-        setPaymentAmount(outstanding.toString()); // Default to full amount
+        setPaymentAmount(Math.round(outstanding).toString());
         setIsPaymentModalOpen(true);
     };
 
@@ -556,7 +563,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h2 className="text-2xl lg:text-3xl font-bold text-white flex items-center">
-                            <CurrencyDollarIcon className="h-6 w-6 lg:h-7 lg:w-7 mr-3 text-white" />
+                            <BanknotesIcon className="h-6 w-6 lg:h-7 lg:w-7 mr-3 text-white" />
                             Loan Management
                         </h2>
                     </div>
@@ -717,7 +724,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                                     min="1"
                                     value={paymentAmount} 
                                     onChange={(e) => setPaymentAmount(e.target.value)} 
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500" 
+                                    className="w-full px-4 py-3 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-emerald-500" 
                                     required 
                                 />
                             </div>
@@ -729,7 +736,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                                     placeholder="e.g. 0712345678"
                                     value={paymentPhone} 
                                     onChange={(e) => setPaymentPhone(e.target.value)} 
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500" 
+                                    className="w-full px-4 py-3 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-emerald-500" 
                                     required 
                                 />
                             </div>
@@ -762,7 +769,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             <div className="bg-purple-600 px-6 py-5">
                 <h3 className="text-xl font-bold text-white flex items-center">
-                    <CurrencyDollarIcon className="h-6 w-6 mr-2" />
+                    <BanknotesIcon className="h-6 w-6 mr-2" />
                     Record Offline Repayment
                 </h3>
                 <p className="text-purple-100 text-sm mt-1">Record cash or direct bank transfers</p>
@@ -781,10 +788,9 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                         type="number" 
                         min="1"
                         max={manualPayLoan.outstandingBalance ?? undefined}
-                        step="0.01"
                         value={manualPayAmount} 
                         onChange={(e) => setManualPayAmount(e.target.value)} 
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" 
+                        className="w-full px-4 py-3 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500" 
                         required 
                     />
                     <p className="text-xs text-gray-500 mt-1">Leave as full amount to mark the loan as completely repaid.</p>
@@ -816,7 +822,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
                         <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-6 py-5 rounded-t-2xl">
                             <h3 className="text-xl font-bold text-white flex items-center">
-                                <CurrencyDollarIcon className="h-6 w-6 mr-2" />
+                                <BanknotesIcon className="h-6 w-6 mr-2" />
                                 New Loan Request
                             </h3>
                             <p className="text-blue-100 text-sm mt-1">Submit your loan request for approval</p>
@@ -828,15 +834,15 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <CurrencyDollarIcon className="h-5 w-5 text-gray-400" />
+                                        <BanknotesIcon className="h-5 w-5 text-gray-400" />
                                     </div>
                                     <input 
                                         type="number" 
                                         min="1"
-                                        step="0.01"
+                                       
                                         value={newLoanAmount} 
                                         onChange={(e) => setNewLoanAmount(e.target.value)} 
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" 
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 text-gray-800 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" 
                                         placeholder="Enter amount"
                                         required 
                                     />
@@ -850,7 +856,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                                 <textarea 
                                     value={newLoanReason} 
                                     onChange={(e) => setNewLoanReason(e.target.value)} 
-                                    className="w-full px-4 py-3 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" 
+                                    className="w-full px-4 py-3 border border-gray-300 text-gray-800 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" 
                                     rows={4}
                                     placeholder="Explain why you need this loan"
                                     required
@@ -869,7 +875,7 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
                                         const values = options.map(option => option.value);
                                         setSelectedGuarantors(values);
                                     }}
-                                    className="w-full px-4 py-3 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 h-32" 
+                                    className="w-full px-4 py-3 border border-gray-300 text-gray-800 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 h-32" 
                                 >
                                     {members.map((member) => (
                                         <option key={member.userId._id} value={member.userId._id} className="py-2">

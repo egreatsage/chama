@@ -36,9 +36,15 @@ export async function POST(request, { params }) {
         return NextResponse.json({ error: "You are not listed as a guarantor for this loan." }, { status: 403 });
     }
 
-    // 3. Update the Guarantor's Status
-    loan.guarantors[guarantorIndex].status = status;
-    loan.guarantors[guarantorIndex].responseDate = new Date();
+await Loan.updateOne(
+        { _id: loanId, chamaId, 'guarantors.userId': user.id },
+        { 
+            $set: { 
+                'guarantors.$.status': status,
+                'guarantors.$.responseDate': new Date()
+            } 
+        }
+    );
     
     await loan.save();
 
