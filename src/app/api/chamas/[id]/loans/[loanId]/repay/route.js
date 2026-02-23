@@ -19,7 +19,7 @@ export async function POST(request, { params }) {
 
     const parsedAmount = parseFloat(amount);
 
-    // 1. Authenticate and authorize the user (must be chairperson or treasurer)
+    // 1. Authenticate and authorize the user
     const { authorized, error, memberId, userId } = await checkChamaRole(chamaId, ['chairperson', 'treasurer']);
     if (!authorized) {
       return NextResponse.json({ error: error || "Not authorized" }, { status: 403 });
@@ -30,52 +30,52 @@ export async function POST(request, { params }) {
     if (!loan) {
       return NextResponse.json({ error: "Loan not found" }, { status: 404 });
     }
-     if (loan.chamaId.toString() !== chamaId) {
+    if (loan.chamaId.toString() !== chamaId) {
       return NextResponse.json({ error: "Loan does not belong to this chama." }, { status: 400 });
     }
 
-    // 3. Update the loan's totalPaid amount
-    loan.totalPaid += parsedAmount;
-    
-    // Check if the loan is now fully repaid
+    // 3. Update the loan using findByIdAndUpdate to avoid validation errors on older records
+    const newTotalPaid = (loan.totalPaid || 0) + parsedAmount;
     const totalOwed = (loan.totalExpectedRepayment || loan.amount) + (loan.penaltyAmount || 0);
-    if (loan.totalPaid >= totalOwed) {
-      loan.status = 'repaid';
-    } else {
-        // If partially paid, ensure it's marked as active
-        loan.status = 'active';
-    }
+    const newStatus = newTotalPaid >= totalOwed ? 'repaid' : 'active';
 
-    await loan.save();
+    const updatedLoan = await Loan.findByIdAndUpdate(
+      loanId,
+      { 
+        totalPaid: newTotalPaid,
+        status: newStatus 
+      },
+      { new: true } // Returns the updated document
+    );
 
     // 4. Create a transaction record for this manual payment
     await Transaction.create({
       type: 'loan_repayment',
       referenceId: loan._id,
-      userId: loan.userId, // The user who OWNS the loan
+      userId: loan.userId,
       chamaId: chamaId,
       amount: parsedAmount,
-      paymentMethod: paymentMethod, // 'cash', 'bank', etc.
+      paymentMethod: paymentMethod,
       status: 'completed',
     });
 
     // 5. Update the Chama's main balance
-     await Chama.findByIdAndUpdate(chamaId, {
-        $inc: { currentBalance: parsedAmount }
+    await Chama.findByIdAndUpdate(chamaId, {
+      $inc: { currentBalance: parsedAmount }
     });
 
     // 6. Log the audit event
     await logAuditEvent({
         chamaId,
-        userId: userId, // The admin who is performing the action
+        userId: userId, 
         action: 'MANUAL_LOAN_REPAYMENT',
         category: 'LOAN',
         amount: parsedAmount,
         description: `Admin recorded a manual loan repayment of ${parsedAmount} for user ${loan.userId.toString()}`,
-        after: loan.toObject()
+        after: updatedLoan.toObject()
     });
 
-    return NextResponse.json({ loan }, { status: 200 });
+    return NextResponse.json({ loan: updatedLoan }, { status: 200 });
 
   } catch (error) {
     console.error("Failed to record manual repayment:", error);

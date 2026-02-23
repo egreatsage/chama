@@ -63,26 +63,34 @@ async function handleSuccessfulLoanRepayment(transaction, amount, receipt) {
         return;
     }
 
-    loan.totalPaid += amount;
-    // Optional: Check if the loan is fully repaid
-    if (loan.totalPaid >= loan.totalExpectedRepayment) {
-        loan.status = 'repaid';
-    }
-    await loan.save();
+    // Calculate new totals safely
+    const totalOwed = (loan.totalExpectedRepayment || loan.amount) + (loan.penaltyAmount || 0);
+    const newTotalPaid = (loan.totalPaid || 0) + amount;
+    const newStatus = newTotalPaid >= totalOwed ? 'repaid' : 'active';
+
+    // Use findByIdAndUpdate to bypass strict document validation on older missing fields
+    const updatedLoan = await Loan.findByIdAndUpdate(
+        loan._id,
+        {
+            totalPaid: newTotalPaid,
+            status: newStatus
+        },
+        { new: true } // Return the updated document
+    );
 
     await logAuditEvent({
-        chamaId: loan.chamaId,
+        chamaId: updatedLoan.chamaId,
         userId: transaction.userId,
         action: 'LOAN_REPAYMENT_SUCCESS',
         category: 'LOAN',
         amount: amount,
         description: `Loan repayment of ${amount} successful via M-Pesa. Receipt: ${receipt}`,
-        after: loan.toObject()
+        after: updatedLoan.toObject()
     });
     
     // Also increase the chama's main balance
-    if (loan.chamaId && amount > 0) {
-        await Chama.findByIdAndUpdate(loan.chamaId, {
+    if (updatedLoan.chamaId && amount > 0) {
+        await Chama.findByIdAndUpdate(updatedLoan.chamaId, {
             $inc: { currentBalance: amount }
         });
     }
@@ -153,4 +161,3 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
   }
 }
-
