@@ -340,7 +340,9 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
     const fetchLoans = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/chamas/${chama._id}/loans`);
+            const res = await fetch(`/api/chamas/${chama._id}/loans?_t=${Date.now()}`, { 
+                cache: 'no-store' 
+            });
             if (!res.ok) throw new Error("Failed to fetch loans");
             const data = await res.json();
             setLoans(data.loans);
@@ -516,7 +518,9 @@ export default function LoansTab({ chama, userRole, currentUserId }) {
 
             const pollInterval = setInterval(async () => {
                 pollCount++;
-                const freshLoansRes = await fetch(`/api/chamas/${chama._id}/loans`);
+                const freshLoansRes = await fetch(`/api/chamas/${chama._id}/loans?_t=${Date.now()}`, {
+             cache: 'no-store'
+        });
                 const freshLoansData = await freshLoansRes.json();
                 const updatedLoan = freshLoansData.loans.find(l => l._id === paymentLoan._id);
 
