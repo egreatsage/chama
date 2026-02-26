@@ -1,3 +1,4 @@
+// File Path: src/components/chama/ContributionsTab.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,11 +10,11 @@ import {
   XCircleIcon,
   CurrencyDollarIcon,
   UsersIcon,
-  CalendarIcon,
+  CalendarIcon, // kept for reference, though unused in snippet
   ArrowPathIcon,
   DocumentArrowDownIcon,
-  TagIcon, // Added TagIcon icon
-  InformationCircleIcon
+  TagIcon,
+  InformationCircleIcon // kept for reference
 } from '@heroicons/react/24/solid';
 
 const formatCurrency = (amount) => {
@@ -31,7 +32,6 @@ const formatCurrency = (amount) => {
 
 const formatPhoneNumber = (phone) => {
   const digits = phone.replace(/\D/g, '');
-  
   if (digits.startsWith('254')) {
     return digits;
   } else if (digits.startsWith('0')) {
@@ -55,10 +55,10 @@ const StatusBadge = ({ status }) => {
     'Unpaid': XCircleIcon
   };
 
-  const Icon = icons[status];
+  const Icon = icons[status] || XCircleIcon;
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${styles[status]}`}>
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${styles[status] || styles['Unpaid']}`}>
       <Icon className="w-3 h-3 mr-1 flex-shrink-0" />
       <span className="truncate">{status}</span>
     </span>
@@ -70,7 +70,7 @@ const StatsCard = ({ icon: Icon, title, value, subtitle, paragraph, color = 'blu
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
     red: 'bg-red-50 text-red-600',
-    purple: 'bg-purple-50 text-purple-600' // Added color for TagIcon
+    purple: 'bg-purple-50 text-purple-600'
   };
 
   return (
@@ -131,18 +131,15 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
 
   const handleMpesaPay = async (e) => {
     e.preventDefault();
-    
     if (!mpesaAmount || !mpesaPhone) {
       toast.error('Please fill in all fields');
       return;
     }
-
     const amount = parseFloat(mpesaAmount);
     if (amount <= 0 || amount > 300000) {
       toast.error('Amount must be between KES 1 and KES 300,000');
       return;
     }
-
     const formattedPhone = formatPhoneNumber(mpesaPhone);
     if (formattedPhone.length < 12) {
       toast.error('Please enter a valid phone number');
@@ -151,7 +148,6 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
 
     setIsPaying(true);
     const toastId = toast.loading('Sending M-Pesa prompt...');
-    
     try {
       const res = await fetch(`/api/mpesa/stkpush`, {
         method: 'POST',
@@ -162,18 +158,12 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
           chamaId: chama._id 
         }),
       });
-      
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'STK Push failed');
       
-      toast.success('Payment prompt sent! Please check your phone and enter your M-Pesa PIN.', { 
-        id: toastId, 
-        duration: 8000 
-      });
-      
+      toast.success('Payment prompt sent! Please check your phone.', { id: toastId, duration: 8000 });
       setMpesaAmount('');
       setMpesaPhone('');
-      
       setTimeout(fetchContributionStatus, 25000);
     } catch (error) {
       console.error('M-Pesa payment error:', error);
@@ -185,12 +175,10 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
 
   const handleManualRecord = async (e) => {
     e.preventDefault();
-    
     if (!selectedMember || !manualAmount) {
       toast.error('Please select a member and enter an amount');
       return;
     }
-
     const amount = parseFloat(manualAmount);
     if (amount <= 0) {
       toast.error('Amount must be greater than 0');
@@ -199,17 +187,12 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
 
     setIsRecording(true);
     const toastId = toast.loading('Recording contribution...');
-    
     try {
       const res = await fetch(`/api/chamas/${chama._id}/contributions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          memberId: selectedMember, 
-          amount: amount 
-        }),
+        body: JSON.stringify({ memberId: selectedMember, amount: amount }),
       });
-      
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to record contribution');
       
@@ -232,15 +215,13 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
   })() : null;
 
   const periodFrequency = statusData?.period?.frequency ? 
-    statusData.period.frequency.charAt(0).toUpperCase() + statusData.period.frequency.slice(1) : 
-    '';
+    statusData.period.frequency.charAt(0).toUpperCase() + statusData.period.frequency.slice(1) : '';
 
-    const generateExcel = () => {
+  const generateExcel = () => {
       if (!statusData || !statusData.memberStatuses) {
           toast.error("No contribution data available to export.");
           return;
       }
-  
       const excelData = statusData.memberStatuses.map(member => ({
           'First Name': member.memberInfo.firstName || '',
           'Last Name': member.memberInfo.lastName || '',
@@ -250,19 +231,12 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
           'Status (Period)': member.status || 'Unpaid',
           'Last Payment Method': member.lastPayment ? member.lastPayment.method : 'N/A'
       }));
-  
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.json_to_sheet(excelData);
-  
-      worksheet['!cols'] = [
-          { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
-      ];
-  
+      worksheet['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 20 }];
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Contributions');
-  
       const currentDate = new Date().toISOString().split('T')[0];
       const filename = `${chama.name}_contributions_${currentDate}.xlsx`;
-  
       XLSX.writeFile(workbook, filename);
   };
 
@@ -278,61 +252,76 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
     );
   }
 
-  // **MODIFIED a little bit to show the TagIcon amount for equal sharing chamas**
   return (
     <div className="max-w-7xl mx-auto space-y-6">
      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-xl rounded-xl p-6 md:p-8 border-l-4 border-blue-500 hover:shadow-2xl transition-all duration-300 backdrop-blur-sm">
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 sm:mb-0">
-      Current Cycle 
-      <span className="inline-block bg-blue-500 text-white px-3 py-1 rounded-full text-sm md:text-base ml-2 font-medium">
-        #{chama.cycleCount || 1}
-      </span>
-    </h2>
-    <div className="flex items-center space-x-2">
-      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-      <span className="text-sm text-gray-600 font-medium">Active</span>
-    </div>
-  </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 sm:mb-0">
+          Current Cycle 
+          <span className="inline-block bg-blue-500 text-white px-3 py-1 rounded-full text-sm md:text-base ml-2 font-medium">
+            #{chama.cycleCount || 1}
+          </span>
+        </h2>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+          <span className="text-sm text-gray-600 font-medium">Active</span>
+        </div>
+      </div>
   
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-    <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 md:p-5 border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:transform hover:-translate-y-1">
-      <div className="flex items-center mb-2">
-        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-        <p className="text-gray-600 text-xs md:text-sm uppercase tracking-wide font-medium">Start Date</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        {/* CARD 1: START DATE */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 md:p-5 border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:transform hover:-translate-y-1">
+          <div className="flex items-center mb-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+            <p className="text-gray-600 text-xs md:text-sm uppercase tracking-wide font-medium">Start Date</p>
+          </div>
+          <p className="font-bold text-gray-800 text-base md:text-lg">
+            {chama.operationType === 'rotation_payout' 
+              ? (chama.rotationPayout?.savingStartDate ? 
+                  new Date(chama.rotationPayout.savingStartDate).toLocaleDateString() : 
+                  <span className="text-gray-400 italic">Not set</span>)
+              : (chama.equalSharing?.currentCycle?.startDate ? 
+                  new Date(chama.equalSharing.currentCycle.startDate).toLocaleDateString() : 
+                  <span className="text-gray-400 italic">Not set</span>)
+            }
+          </p>
+        </div>
+        
+        {/* CARD 2: END DATE / NEXT PAYOUT */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 md:p-5 border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:transform hover:-translate-y-1">
+          <div className="flex items-center mb-2">
+            <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+            <p className="text-gray-600 text-xs md:text-sm uppercase tracking-wide font-medium">
+              {chama.operationType === 'rotation_payout' ? 'Next Payout' : 'End Date'}
+            </p>
+          </div>
+          <p className="font-bold text-gray-800 text-base md:text-lg">
+            {chama.operationType === 'rotation_payout' 
+              ? (chama.rotationPayout?.nextPayoutDate ? 
+                  new Date(chama.rotationPayout.nextPayoutDate).toLocaleDateString() : 
+                  <span className="text-gray-400 italic">Not scheduled</span>)
+              : (chama.equalSharing?.currentCycle?.endDate ? 
+                  new Date(chama.equalSharing.currentCycle.endDate).toLocaleDateString() : 
+                  <span className="text-gray-400 italic">Not set</span>)
+            }
+          </p>
+        </div>
+        
+        {/* CARD 3: TARGET AMOUNT */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 md:p-5 border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:transform hover:-translate-y-1 sm:col-span-2 lg:col-span-1">
+          <div className="flex items-center mb-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+            <p className="text-gray-600 text-xs md:text-sm uppercase tracking-wide font-medium">Target Amount</p>
+          </div>
+          <p className="font-bold text-gray-800 text-lg md:text-xl">
+            {chama.operationType === 'rotation_payout' 
+              ? formatCurrency(chama.rotationPayout?.targetAmount)
+              : formatCurrency(chama.equalSharing?.currentCycle?.targetAmount)
+            }
+          </p>
+        </div>
       </div>
-      <p className="font-bold text-gray-800 text-base md:text-lg">
-        {chama.equalSharing?.currentCycle?.startDate ? 
-          new Date(chama.equalSharing.currentCycle.startDate).toLocaleDateString() : 
-          <span className="text-gray-400 italic">Not set</span>
-        }
-      </p>
     </div>
-    
-    <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 md:p-5 border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:transform hover:-translate-y-1">
-      <div className="flex items-center mb-2">
-        <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-        <p className="text-gray-600 text-xs md:text-sm uppercase tracking-wide font-medium">End Date</p>
-      </div>
-      <p className="font-bold text-gray-800 text-base md:text-lg">
-        {chama.equalSharing?.currentCycle?.endDate ? 
-          new Date(chama.equalSharing.currentCycle.endDate).toLocaleDateString() : 
-          <span className="text-gray-400 italic">Not set</span>
-        }
-      </p>
-    </div>
-    
-    <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 md:p-5 border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:transform hover:-translate-y-1 sm:col-span-2 lg:col-span-1">
-      <div className="flex items-center mb-2">
-        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-        <p className="text-gray-600 text-xs md:text-sm uppercase tracking-wide font-medium">Target Amount</p>
-      </div>
-      <p className="font-bold text-gray-800 text-lg md:text-xl">
-        {formatCurrency(chama.equalSharing?.currentCycle?.targetAmount)}
-      </p>
-    </div>
-  </div>
-</div>
 
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -388,9 +377,9 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
         </div>
       )}
     
-    
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         <div className="xl:col-span-1 space-y-6">
+          {/* M-PESA FORM */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
             <div className="p-4 sm:p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Pay with M-Pesa</h3>
@@ -434,6 +423,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
             </div>
           </div>
 
+          {/* MANUAL PAYMENT FORM */}
           {['chairperson', 'treasurer'].includes(userRole) && (
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
               <div className="p-4 sm:p-6">
@@ -484,6 +474,7 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
           )}
         </div>
 
+        {/* CONTRIBUTION STATUS LIST */}
         <div className="xl:col-span-3">
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
             <div className="p-4 sm:p-6 border-b border-gray-200">
@@ -492,53 +483,44 @@ export default function ContributionsTab({ chama, members = [], userRole, curren
                   <h3 className="text-lg font-semibold text-gray-900">
                     {periodFrequency} Contribution Status
                   </h3>
+                   {/* Period Display */}
                   <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
-  <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-    {chama.operationType === 'equal_sharing' && chama.equalSharing?.currentCycle?.startDate ? (
-      <>
-        <div className="flex items-center gap-2">
-          <svg className="h-4 w-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5a2.25 2.25 0 0 0 2.25-2.25m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5a2.25 2.25 0 0 1 2.25 2.25v7.5" />
-          </svg>
-          <span className="font-semibold text-gray-700">Period:</span>
-        </div>
-        <div className="text-gray-600 ml-6 sm:ml-0">
-          <span className="bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm">
-            {new Date(chama.equalSharing.currentCycle.startDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
-          </span>
-          {chama.equalSharing.currentCycle.endDate && (
-            <>
-              <span className="mx-2 text-gray-400">→</span>
-              <span className="bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm">
-                {new Date(chama.equalSharing.currentCycle.endDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
-              </span>
-            </>
-          )}
-        </div>
-      </>
-    ) : chama.operationType === 'rotation_payout' && chama.rotationPayout?.savingStartDate ? (
-      <>
-        <div className="flex items-center gap-2">
-          <svg className="h-4 w-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
-          <span className="font-semibold text-gray-700">Started:</span>
-        </div>
-        <span className="bg-white px-3 py-1.5 rounded-md border border-gray-200 shadow-sm text-gray-600 ml-6 sm:ml-0">
-          {new Date(chama.rotationPayout.savingStartDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
-        </span>
-      </>
-    ) : (
-      <div className="flex items-center gap-2 text-gray-500">
-        <svg className="animate-spin h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <span className="italic">Loading period information...</span>
-      </div>
-    )}
-  </div>
-                   </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
+                      {chama.operationType === 'equal_sharing' && chama.equalSharing?.currentCycle?.startDate ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-700">Period:</span>
+                          </div>
+                          <div className="text-gray-600 ml-6 sm:ml-0">
+                            <span className="bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm">
+                              {new Date(chama.equalSharing.currentCycle.startDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </span>
+                            {chama.equalSharing.currentCycle.endDate && (
+                              <>
+                                <span className="mx-2 text-gray-400">→</span>
+                                <span className="bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm">
+                                  {new Date(chama.equalSharing.currentCycle.endDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      ) : chama.operationType === 'rotation_payout' && chama.rotationPayout?.savingStartDate ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-700">Started:</span>
+                          </div>
+                          <span className="bg-white px-3 py-1.5 rounded-md border border-gray-200 shadow-sm text-gray-600 ml-6 sm:ml-0">
+                            {new Date(chama.rotationPayout.savingStartDate).toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </span>
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <span className="italic">Loading period information...</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                <div className='flex space-x-2'>

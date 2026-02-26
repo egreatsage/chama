@@ -14,13 +14,28 @@ export default function EditChamaModal({ chama, isOpen, onClose, onUpdate }) {
     if (chama) {
         // Deep copy to avoid mutating the original prop object
         const initialData = JSON.parse(JSON.stringify(chama));
-        setFormData({
+        // Extract Equal Sharing details safely
+        const esCycle = initialData.equalSharing?.currentCycle || {};
+        
+        // Extract Rotation Payout details safely
+        const rpData = initialData.rotationPayout || {};
+       setFormData({
             name: initialData.name || '',
             description: initialData.description || '',
             contributionAmount: initialData.contributionAmount || '',
             contributionFrequency: initialData.contributionFrequency || 'monthly',
-            equalSharing: initialData.equalSharing || {},
-            rotationPayout: initialData.rotationPayout || {},
+            
+            equalSharing: {
+                // Check both locations just in case, prioritizing the nested schema location
+                targetAmount: esCycle.targetAmount || initialData.equalSharing?.targetAmount || '',
+                savingEndDate: esCycle.endDate || initialData.equalSharing?.savingEndDate || '' // Note: schema uses 'endDate'
+            },
+            
+            rotationPayout: {
+                // Map schema 'targetAmount' to form 'payoutAmount'
+                payoutAmount: rpData.targetAmount || rpData.payoutAmount || '',
+                payoutFrequency: rpData.payoutFrequency || 'monthly',
+            },
         });
     }
   }, [chama, isOpen]);

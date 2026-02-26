@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { ArrowRight, RefreshCw, UserCheck, CheckCircle, XCircle, History, FileDown, Zap } from 'lucide-react';
+import { ArrowRight, RefreshCw, UserCheck, CheckCircle, XCircle, History, FileDown, Zap, AlertTriangle } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import * as XLSX from 'xlsx';
 import {
@@ -16,12 +16,32 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
     const [contributionStatus, setContributionStatus] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const memberMap = new Map(members.map(m => [m.userId._id.toString(), m.userId]));
-    const rotationOrderIds = chama.rotationPayout?.rotationOrder || [];
-    const [orderedMembers, setOrderedMembers] = useState(
-        rotationOrderIds.map(userId => memberMap.get(userId.toString())).filter(Boolean)
+    // Build a map from userId string -> user object, handling both populated objects and plain IDs
+    const memberMap = new Map(
+        members.map(m => {
+            const userObj = m.userId?._id ? m.userId : m.userId;
+            const key = (userObj?._id || userObj)?.toString();
+            return [key, userObj];
+        })
     );
-    
+
+    const rotationOrderIds = chama.rotationPayout?.rotationOrder || [];
+
+    // Derive the ordered list from the rotation IDs, falling back to the full members list
+    // if the map lookup fails (e.g. IDs are plain strings not populated objects)
+    const resolveOrderedMembers = () => {
+        const resolved = rotationOrderIds
+            .map(userId => memberMap.get(userId?.toString()))
+            .filter(Boolean);
+        // If map lookups all failed, fall back to members order so drag-and-drop still works
+        if (resolved.length === 0 && members.length > 0) {
+            return members.map(m => m.userId?._id ? m.userId : m.userId).filter(Boolean);
+        }
+        return resolved;
+    };
+
+    const [orderedMembers, setOrderedMembers] = useState(resolveOrderedMembers);
+
     const payoutHistory = cycles?.filter(c => c.cycleType === 'rotation_cycle');
 
     useEffect(() => {
@@ -43,7 +63,7 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
         };
         fetchContributionStatus();
     }, [chama._id, onRotationUpdate]);
-    
+
     const onDragEnd = (result) => {
         if (!result.destination) return;
         const items = Array.from(orderedMembers);
@@ -75,7 +95,30 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
     };
 
     const handleExecutePayout = async () => {
-        if (!window.confirm("Are you sure? This will execute the payout and advance to the next member.")) return;
+        // Check for unpaid/partially paid members and warn accordingly
+        const unpaidCount = contributionStatus?.stats?.unpaidMembers || 0;
+        const partialCount = contributionStatus?.stats?.partiallyPaidMembers || 0;
+        const totalUnpaid = unpaidCount + partialCount;
+
+        if (totalUnpaid > 0) {
+            const unpaidNames = contributionStatus?.memberStatuses
+                ?.filter(({ status }) => status !== 'Paid')
+                ?.map(({ memberInfo }) => `${memberInfo.firstName} ${memberInfo.lastName}`)
+                ?.join(', ') || '';
+
+            const warningMessage =
+                `⚠️ WARNING: Not all members have fully paid!\n\n` +
+                `• ${unpaidCount} unpaid member(s)\n` +
+                `• ${partialCount} partially paid member(s)\n` +
+                (unpaidNames ? `\nMembers with outstanding payments:\n${unpaidNames}\n` : '') +
+                `\nThe payout will proceed using the current balance (${formatCurrency(chama.currentBalance)}).\n\n` +
+                `Do you still want to proceed with the payout?`;
+
+            if (!window.confirm(warningMessage)) return;
+        } else {
+            if (!window.confirm("Are you sure? This will execute the payout and advance to the next member.")) return;
+        }
+
         setIsSaving(true);
         const toastId = toast.loading('Executing Payout...');
         try {
@@ -90,12 +133,23 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
             setIsSaving(false);
         }
     };
-    
-    const currentIndex = chama.rotationPayout?.currentRecipientIndex || 0;
-    const currentRecipient = orderedMembers[currentIndex];
-    const allMembersPaid = contributionStatus?.stats?.unpaidMembers === 0 && contributionStatus?.stats?.partiallyPaidMembers === 0;
+
+    const currentIndex = chama.rotationPayout?.currentRecipientIndex ?? 0;
+    const currentRecipient = orderedMembers[currentIndex] ?? null;
+
+    // Simplified: payout is possible if there's a recipient lined up and the balance
+    // meets or exceeds the target. We no longer block on unpaid members — the confirm
+    // dialog in handleExecutePayout handles that warning instead.
+    const targetAmount = chama.rotationPayout?.targetAmount || 0;
+    const canPayout = currentRecipient != null && (chama.currentBalance ?? 0) >= targetAmount;
+
+    const unpaidOrPartialCount = (contributionStatus?.stats?.unpaidMembers || 0) + (contributionStatus?.stats?.partiallyPaidMembers || 0);
+    const hasUnpaidMembers = unpaidOrPartialCount > 0;
+
     const isNewRotation = currentIndex === 0 && payoutHistory.length >= members.length;
-     console.log({ contributionStatus, payoutHistory, currentIndex, isNewRotation,currentRecipient });
+
+    console.log({ contributionStatus, payoutHistory, currentIndex, isNewRotation, currentRecipient, canPayout });
+
     // Chart data preparation
     const contributionChartData = [
         { name: 'Paid', value: contributionStatus?.stats?.paidMembers || 0 },
@@ -103,37 +157,36 @@ export default function RotationTab({ chama, members, userRole, onRotationUpdate
     ];
     const COLORS = ['#10B981', '#EF4444'];
 
-const historyChartData = payoutHistory
-    .map(cycle => ({
-        // FIX: Access the first name directly from the populated recipientId object
-        name: `${cycle.recipientId?.firstName || 'Unknown'}`,
-        'Payout Amount': cycle.actualAmount,
-    }))
-    .reverse();
+    const historyChartData = payoutHistory
+        .map(cycle => ({
+            name: `${cycle.recipientId?.firstName || 'Unknown'}`,
+            'Payout Amount': cycle.actualAmount,
+        }))
+        .reverse();
 
     const generateHistoryExcel = () => {
         if (!payoutHistory || payoutHistory.length === 0) {
             toast.error("No payout history to export.");
             return;
         }
-    
+
         const excelData = payoutHistory.map(cycle => ({
             'Date': new Date(cycle.endDate).toLocaleDateString(),
-            'Recipient': `${memberMap.get(cycle.recipientId)?.firstName || 'Unknown'} ${memberMap.get(cycle.recipientId)?.lastName || 'Member'}`,
+            'Recipient': `${cycle.recipientId?.firstName || 'Unknown'} ${cycle.recipientId?.lastName || 'Member'}`,
             'Amount': cycle.actualAmount,
         }));
-    
+
         const workbook = XLSX.utils.book_new();
         const worksheet = XLSX.utils.json_to_sheet(excelData);
-    
+
         worksheet['!cols'] = [
-            { wch: 15 }, // Date
-            { wch: 25 }, // Recipient
-            { wch: 15 }, // Amount
+            { wch: 15 },
+            { wch: 25 },
+            { wch: 15 },
         ];
-    
+
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Rotation History');
-    
+
         const currentDate = new Date().toISOString().split('T')[0];
         const filename = `${chama.name}_rotation_history_${currentDate}.xlsx`;
         XLSX.writeFile(workbook, filename);
@@ -157,6 +210,25 @@ const historyChartData = payoutHistory
                 </div>
             )}
 
+            {/* Unpaid Members Warning Banner */}
+            {hasUnpaidMembers && userRole === 'chairperson' && (
+                <div className="mb-6 p-4 bg-orange-50 border-l-4 border-orange-400 rounded-r-lg">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <AlertTriangle className="h-5 w-5 text-orange-500" />
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm font-semibold text-orange-800">
+                                {unpaidOrPartialCount} member(s) have not fully paid this period.
+                            </p>
+                            <p className="text-xs text-orange-700 mt-1">
+                                You can still execute the payout, but you will be prompted to confirm. The payout will use the current available balance.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 {/* Left Column: Status and Order */}
                 <div className="space-y-6 sm:space-y-8">
@@ -168,7 +240,7 @@ const historyChartData = payoutHistory
                                     <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
                                     Current Rotation Status
                                 </h2>
-                                
+
                                 {currentRecipient ? (
                                     <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-4 border-l-4 border-green-500 mb-4">
                                         <div className="flex items-center">
@@ -189,7 +261,7 @@ const historyChartData = payoutHistory
                                         <p className="text-red-600 font-medium">No rotation order set up yet</p>
                                     </div>
                                 )}
-                                
+
                                 {/* Contribution Status */}
                                 <div>
                                     <h3 className="font-semibold text-lg text-gray-800 mb-2 flex items-center">
@@ -197,9 +269,9 @@ const historyChartData = payoutHistory
                                         Current Period Contribution Status
                                     </h3>
                                     <p className="text-sm text-gray-500 mb-4">
-                                        The payout button will be enabled once all members have paid.
+                                        Payout can be executed even if some members have not fully paid — a confirmation will be required.
                                     </p>
-                                    
+
                                     <div className="grid gap-2">
                                         {isLoading ? (
                                             <div className="bg-gray-100 rounded-lg p-4">
@@ -216,14 +288,18 @@ const historyChartData = payoutHistory
                                                     </span>
                                                     <div className="flex items-center space-x-2">
                                                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                                            status === 'Paid' 
-                                                                ? 'bg-green-100 text-green-700' 
+                                                            status === 'Paid'
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : status === 'Partial'
+                                                                ? 'bg-yellow-100 text-yellow-700'
                                                                 : 'bg-red-100 text-red-700'
                                                         }`}>
                                                             {status}
                                                         </span>
-                                                        {status === 'Paid' ? 
-                                                            <CheckCircle className="w-5 h-5 text-green-500" /> : 
+                                                        {status === 'Paid' ?
+                                                            <CheckCircle className="w-5 h-5 text-green-500" /> :
+                                                            status === 'Partial' ?
+                                                            <AlertTriangle className="w-5 h-5 text-yellow-500" /> :
                                                             <XCircle className="w-5 h-5 text-red-500" />
                                                         }
                                                     </div>
@@ -250,13 +326,13 @@ const historyChartData = payoutHistory
                                         💡 Drag and drop members to reorder the rotation sequence
                                     </p>
                                 </div>
-                                
+
                                 <DragDropContext onDragEnd={onDragEnd}>
                                     <Droppable droppableId="members">
                                         {(provided, snapshot) => (
-                                            <ol 
-                                                {...provided.droppableProps} 
-                                                ref={provided.innerRef} 
+                                            <ol
+                                                {...provided.droppableProps}
+                                                ref={provided.innerRef}
                                                 className={`space-y-2 sm:space-y-3 transition-colors duration-200 ${
                                                     snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2' : ''
                                                 }`}
@@ -270,8 +346,8 @@ const historyChartData = payoutHistory
                                                                 {...provided.dragHandleProps}
                                                                 className={`
                                                                     p-3 sm:p-4 rounded-xl border-2 transition-all duration-300 cursor-grab active:cursor-grabbing
-                                                                    ${index === currentIndex 
-                                                                        ? 'bg-gradient-to-r from-green-100 via-blue-100 to-green-100 border-green-400 shadow-lg font-bold text-green-800 transform scale-105' 
+                                                                    ${index === currentIndex
+                                                                        ? 'bg-gradient-to-r from-green-100 via-blue-100 to-green-100 border-green-400 shadow-lg font-bold text-green-800 transform scale-105'
                                                                         : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
                                                                     }
                                                                     ${snapshot.isDragging ? 'shadow-2xl transform rotate-2 scale-105 border-blue-500' : ''}
@@ -281,8 +357,8 @@ const historyChartData = payoutHistory
                                                                     <div className="flex items-center space-x-3">
                                                                         <div className={`
                                                                             w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white
-                                                                            ${index === currentIndex 
-                                                                                ? 'bg-gradient-to-r from-green-500 to-blue-500' 
+                                                                            ${index === currentIndex
+                                                                                ? 'bg-gradient-to-r from-green-500 to-blue-500'
                                                                                 : 'bg-gradient-to-r from-gray-400 to-gray-500'
                                                                             }
                                                                         `}>
@@ -322,8 +398,8 @@ const historyChartData = payoutHistory
                                         key={member._id}
                                         className={`
                                             p-3 sm:p-4 rounded-xl border-2 transition-all duration-300
-                                            ${index === currentIndex 
-                                                ? 'bg-gradient-to-r from-green-100 via-blue-100 to-green-100 border-green-400 shadow-lg font-bold text-green-800' 
+                                            ${index === currentIndex
+                                                ? 'bg-gradient-to-r from-green-100 via-blue-100 to-green-100 border-green-400 shadow-lg font-bold text-green-800'
                                                 : 'bg-white border-gray-200'
                                             }
                                         `}
@@ -331,8 +407,8 @@ const historyChartData = payoutHistory
                                         <div className="flex items-center space-x-3">
                                             <div className={`
                                                 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white
-                                                ${index === currentIndex 
-                                                    ? 'bg-gradient-to-r from-green-500 to-blue-500' 
+                                                ${index === currentIndex
+                                                    ? 'bg-gradient-to-r from-green-500 to-blue-500'
                                                     : 'bg-gradient-to-r from-gray-400 to-gray-500'
                                                 }
                                             `}>
@@ -358,13 +434,13 @@ const historyChartData = payoutHistory
                     {userRole === 'chairperson' && (
                         <div className="mt-6 sm:mt-8 border-t border-gray-200 pt-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
-                                <button 
-                                    onClick={() => handleSaveChanges(false)} 
-                                    disabled={isSaving} 
+                                <button
+                                    onClick={() => handleSaveChanges(false)}
+                                    disabled={isSaving}
                                     className="
-                                        bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 
-                                        text-white px-4 sm:px-6 py-3 rounded-xl text-sm font-semibold 
-                                        shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 
+                                        bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700
+                                        text-white px-4 sm:px-6 py-3 rounded-xl text-sm font-semibold
+                                        shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95
                                         transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
                                         disabled:hover:scale-100 disabled:hover:shadow-lg
                                         flex items-center justify-center space-x-2
@@ -376,14 +452,14 @@ const historyChartData = payoutHistory
                                     <span className="hidden sm:inline">Save Manual Order</span>
                                     <span className="sm:hidden">Save Order</span>
                                 </button>
-                                
-                                <button 
-                                    onClick={() => handleSaveChanges(true)} 
-                                    disabled={isSaving} 
+
+                                <button
+                                    onClick={() => handleSaveChanges(true)}
+                                    disabled={isSaving}
                                     className="
-                                        bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 
-                                        text-white px-4 sm:px-6 py-3 rounded-xl text-sm font-semibold 
-                                        shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 
+                                        bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700
+                                        text-white px-4 sm:px-6 py-3 rounded-xl text-sm font-semibold
+                                        shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95
                                         transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
                                         disabled:hover:scale-100 disabled:hover:shadow-lg
                                         flex items-center justify-center space-x-2
@@ -393,29 +469,59 @@ const historyChartData = payoutHistory
                                     <span className="hidden sm:inline">Randomize & Save</span>
                                     <span className="sm:hidden">Randomize</span>
                                 </button>
-                                
-                                <button 
-                                    onClick={handleExecutePayout} 
-                                    disabled={isSaving || !allMembersPaid} 
+
+                                <button
+                                    onClick={handleExecutePayout}
+                                    disabled={isSaving || !canPayout}
                                     className={`
-                                        px-4 sm:px-6 py-3 rounded-xl text-sm font-semibold 
-                                        shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 
+                                        px-4 sm:px-6 py-3 rounded-xl text-sm font-semibold
+                                        shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95
                                         transition-all duration-200
                                         flex items-center justify-center space-x-2
                                         sm:col-span-2 lg:col-span-1
-                                        ${!allMembersPaid || isSaving
+                                        ${!canPayout || isSaving
                                             ? 'bg-gray-400 text-gray-200 cursor-not-allowed hover:scale-100 hover:shadow-lg'
+                                            : hasUnpaidMembers
+                                            ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white'
                                             : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
                                         }
                                     `}
-                                    title={!allMembersPaid ? 'All members must pay before payout' : ''}
+                                    title={
+                                        !canPayout
+                                            ? `Insufficient balance. Need ${formatCurrency(targetAmount)}, have ${formatCurrency(chama.currentBalance ?? 0)}`
+                                            : hasUnpaidMembers
+                                            ? `${unpaidOrPartialCount} member(s) have not fully paid — confirmation required`
+                                            : 'Execute payout for current recipient'
+                                    }
                                 >
-                                    <ArrowRight className="w-4 h-4" />
+                                    {hasUnpaidMembers && canPayout
+                                        ? <AlertTriangle className="w-4 h-4" />
+                                        : <ArrowRight className="w-4 h-4" />
+                                    }
                                     <span className="hidden sm:inline">Execute Payout</span>
                                     <span className="sm:hidden">Execute</span>
                                 </button>
                             </div>
-                            
+
+                            {/* Payout Button Status Info */}
+                            {!canPayout && currentRecipient && (
+                                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center space-x-2">
+                                    <XCircle className="w-4 h-4 flex-shrink-0" />
+                                    <span>
+                                        Insufficient balance for payout. Current balance: <strong>{formatCurrency(chama.currentBalance ?? 0)}</strong> — Target: <strong>{formatCurrency(targetAmount)}</strong>
+                                    </span>
+                                </div>
+                            )}
+
+                            {hasUnpaidMembers && canPayout && (
+                                <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-700 flex items-center space-x-2">
+                                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                                    <span>
+                                        <strong>{unpaidOrPartialCount} member(s)</strong> have not fully paid. Payout is available but will require confirmation.
+                                    </span>
+                                </div>
+                            )}
+
                             {/* Progress Indicator */}
                             <div className="bg-gray-100 rounded-xl p-4">
                                 <div className="flex items-center justify-between mb-2">
@@ -425,7 +531,7 @@ const historyChartData = payoutHistory
                                     </span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                    <div 
+                                    <div
                                         className="h-full bg-gradient-to-r from-green-400 via-blue-400 to-red-400 rounded-full transition-all duration-500 ease-out"
                                         style={{ width: `${((currentIndex + 1) / orderedMembers.length) * 100}%` }}
                                     ></div>
@@ -443,13 +549,13 @@ const historyChartData = payoutHistory
                         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
                             <ResponsiveContainer width="100%" height={200}>
                                 <PieChart>
-                                    <Pie 
-                                        data={contributionChartData} 
-                                        dataKey="value" 
-                                        nameKey="name" 
-                                        cx="50%" 
-                                        cy="50%" 
-                                        outerRadius={60} 
+                                    <Pie
+                                        data={contributionChartData}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={60}
                                         fill="#8884d8"
                                     >
                                         {contributionChartData.map((entry, index) => (
@@ -468,9 +574,9 @@ const historyChartData = payoutHistory
                         <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Payout History</h3>
                         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart 
-                                    data={historyChartData} 
-                                    layout="vertical" 
+                                <BarChart
+                                    data={historyChartData}
+                                    layout="vertical"
                                     margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
                                 >
                                     <CartesianGrid strokeDasharray="3 3" />
@@ -501,7 +607,7 @@ const historyChartData = payoutHistory
                         Export History
                     </button>
                 </div>
-                
+
                 <div className="bg-white rounded-lg shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="min-w-full">
@@ -529,8 +635,8 @@ const historyChartData = payoutHistory
                                                 {new Date(cycle.endDate).toLocaleDateString()}
                                             </td>
                                             <td className="py-3 px-4 text-sm font-medium text-gray-800">
-  {cycle.recipientId?.firstName || 'Unknown'} {cycle.recipientId?.lastName || 'Member'}
-</td>
+                                                {cycle.recipientId?.firstName || 'Unknown'} {cycle.recipientId?.lastName || 'Member'}
+                                            </td>
                                             <td className="py-3 px-4 text-right text-sm font-bold text-green-600">
                                                 {formatCurrency(cycle.actualAmount)}
                                             </td>
@@ -545,10 +651,9 @@ const historyChartData = payoutHistory
                                 )}
                             </tbody>
                         </table>
-                    </div>  
+                    </div>
                 </div>
             </div>
         </div>
     );
-
 }

@@ -5,7 +5,6 @@ import { connectDB } from "@/lib/dbConnect";
 import { getServerSideUser } from '@/lib/auth';
 import Chama from "@/models/Chama";
 import ChamaMember from "@/models/ChamaMember";
-// Remove Contribution import if not used, or keep it
 import ChamaCycle from "@/models/ChamaCycle";
 import User from "@/models/User";
 import { sendRotationPayoutEmail } from '@/lib/email';
@@ -39,18 +38,18 @@ const getCurrentPeriod = (frequency) => {
     return { start, end };
 };
 
-// PUT: Updates the rotation order (Keep existing logic, it was fine)
+// PUT: Updates the rotation order
 export async function PUT(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId }  = await params;
+        const { id: chamaId } = await params;
         const { rotationOrder, randomize } = await request.json();
 
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
-        
+
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
         if (!membership || membership.role !== 'chairperson') {
             return NextResponse.json({ error: "Unauthorized: Only the chairperson can set the rotation order." }, { status: 403 });
@@ -59,7 +58,7 @@ export async function PUT(request, { params }) {
         if (!Array.isArray(rotationOrder)) {
             return NextResponse.json({ error: "Invalid rotation order provided." }, { status: 400 });
         }
-        
+
         let finalOrder = rotationOrder;
         if (randomize) {
             for (let i = finalOrder.length - 1; i > 0; i--) {
@@ -70,7 +69,7 @@ export async function PUT(request, { params }) {
 
         const updatedChama = await Chama.findByIdAndUpdate(
             chamaId,
-            { 
+            {
                 'rotationPayout.rotationOrder': finalOrder,
                 'rotationPayout.currentRecipientIndex': 0
             },
@@ -90,12 +89,16 @@ export async function PUT(request, { params }) {
 }
 
 
-// POST: Executes the payout, creates a historical record, and advances the rotation
+// POST: Executes the payout, creates a historical record, and advances the rotation.
+// NOTE: This endpoint intentionally allows payouts even when some members have not
+// fully paid. The frontend warns the chairperson before confirming. The payout
+// amount disbursed is capped to the actual available balance if it falls short of
+// the target, and the shortfall is recorded for transparency.
 export async function POST(request, { params }) {
     await connectDB();
     try {
         const user = await getServerSideUser();
-        const { id: chamaId }  = await params;
+        const { id: chamaId } = await params;
 
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -105,73 +108,86 @@ export async function POST(request, { params }) {
         if (!chama) {
             return NextResponse.json({ error: "Chama not found." }, { status: 404 });
         }
-        
+
         const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
         if (!membership || membership.role !== 'chairperson') {
             return NextResponse.json({ error: "Only the chairperson can execute a payout." }, { status: 403 });
         }
-        
-        // FIX 1: Use the specific rotation frequency, fallback to 'monthly'
+
         const frequency = chama.rotationPayout?.payoutFrequency || 'monthly';
         const { start } = getCurrentPeriod(frequency);
-        
+
         const { rotationOrder, currentRecipientIndex } = chama.rotationPayout;
-        
+
         if (!rotationOrder || rotationOrder.length === 0) {
             return NextResponse.json({ error: "Rotation order is not set." }, { status: 400 });
         }
 
-        const recipientUserId = rotationOrder[currentRecipientIndex];
-        const recipientUser = await User.findById(recipientUserId);
-        
-        // FIX 2: Ensure we have a valid amount to payout
-        const totalPot = chama.rotationPayout.targetAmount || 0;
-        if (totalPot <= 0) {
+        const targetAmount = chama.rotationPayout.targetAmount || 0;
+        if (targetAmount <= 0) {
             return NextResponse.json({ error: "Payout amount (targetAmount) is not set for this rotation." }, { status: 400 });
         }
-        
-        // FIX 3: Check if there is enough balance (Optional safety check)
-        // If your logic allows paying out even if the specific cash isn't in the wallet yet (e.g. tracking via external M-Pesa), you can skip this.
-        // if (chama.currentBalance < totalPot) {
-        //     return NextResponse.json({ error: `Insufficient balance. Needed: ${totalPot}, Available: ${chama.currentBalance}` }, { status: 400 });
-        // }
 
-        // Create the historical ChamaCycle record
+        // CHANGED: Instead of blocking when balance < targetAmount, we cap the
+        // actual payout to whatever is currently available. This allows the
+        // chairperson to proceed even when some members haven't paid yet.
+        // The shortfall (if any) is recorded on the cycle for auditing.
+        const currentBalance = chama.currentBalance || 0;
+
+        if (currentBalance <= 0) {
+            return NextResponse.json({
+                error: "Cannot execute payout: the chama balance is currently zero."
+            }, { status: 400 });
+        }
+
+        // Actual amount disbursed — whichever is lower: target or available balance
+        const actualAmount = Math.min(currentBalance, targetAmount);
+        const shortfall = targetAmount - actualAmount;
+
+        const recipientUserId = rotationOrder[currentRecipientIndex];
+        const recipientUser = await User.findById(recipientUserId);
+
+        // Create the historical ChamaCycle record, capturing any shortfall
         await ChamaCycle.create({
             chamaId,
             cycleType: 'rotation_cycle',
-            cycleNumber: currentRecipientIndex + 1, 
+            cycleNumber: currentRecipientIndex + 1,
             startDate: start,
             endDate: new Date(),
-            recipientId: recipientUserId, // Now supported by Schema
-            expectedAmount: totalPot,     // Now supported by Schema
-            actualAmount: totalPot,       // Now supported by Schema
-            status: 'completed'
+            recipientId: recipientUserId,
+            expectedAmount: targetAmount,
+            actualAmount: actualAmount,   // May be less than target if members hadn't all paid
+            status: shortfall > 0 ? 'partial' : 'completed',
+            // Store shortfall metadata if your schema supports a notes/meta field:
+            ...(shortfall > 0 && { notes: `Shortfall of KES ${shortfall} due to unpaid contributions.` }),
         });
 
-        // Advance the rotation for the next cycle
+        // Deduct the actual disbursed amount from the balance
+        chama.currentBalance = Math.max(0, currentBalance - actualAmount);
+
+        // Advance the rotation index to the next member
         const nextIndex = (currentRecipientIndex + 1) % rotationOrder.length;
         chama.rotationPayout.currentRecipientIndex = nextIndex;
 
-        // FIX 4: Reset the balance after payout!
-        // This prevents the balance from growing infinitely.
-        chama.currentBalance = Math.max(0, chama.currentBalance - totalPot);
-
         await chama.save();
-        
+
         // Send notification email to the recipient
         if (recipientUser) {
             await sendRotationPayoutEmail({
                 to: recipientUser.email,
                 memberName: recipientUser.firstName,
                 chamaName: chama.name,
-                amount: totalPot,
+                amount: actualAmount,
                 rotationNumber: currentRecipientIndex + 1,
-                totalMembers: rotationOrder.length
+                totalMembers: rotationOrder.length,
             });
         }
 
-        return NextResponse.json({ message: `Payout of KES ${totalPot} successfully made to ${recipientUser.firstName}. Rotation advanced.` });
+        const message = shortfall > 0
+            ? `Payout of KES ${actualAmount} made to ${recipientUser?.firstName || 'recipient'} (KES ${shortfall} short of target due to unpaid contributions). Rotation advanced.`
+            : `Payout of KES ${actualAmount} successfully made to ${recipientUser?.firstName || 'recipient'}. Rotation advanced.`;
+
+        return NextResponse.json({ message });
 
     } catch (error) {
         console.error("Failed to execute payout and advance rotation:", error);

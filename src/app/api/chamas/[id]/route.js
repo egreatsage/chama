@@ -82,12 +82,12 @@ export async function PUT(request, { params }) {
             contributionAmount,
             contributionFrequency,
             // Use dot notation to update nested objects safely
-            'equalSharing.targetAmount': equalSharing.targetAmount,
-            'equalSharing.savingEndDate': equalSharing.savingEndDate,
-            'rotationPayout.payoutAmount': rotationPayout.payoutAmount,
-            'rotationPayout.payoutFrequency': rotationPayout.payoutFrequency,
+            'equalSharing.currentCycle.targetAmount': equalSharing?.targetAmount,
+            'equalSharing.currentCycle.endDate': equalSharing?.savingEndDate,
+             'rotationPayout.targetAmount': rotationPayout?.payoutAmount,
+            'rotationPayout.payoutFrequency': rotationPayout?.payoutFrequency,
         };
-
+Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
         const updatedChama = await Chama.findByIdAndUpdate(chamaId, { $set: updateData }, { new: true, runValidators: true });
 
         if (!updatedChama) {
