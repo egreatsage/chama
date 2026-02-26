@@ -24,18 +24,21 @@ export async function GET(request, { params }) {
 
     const cycles = await ChamaCycle.find({ chamaId })
       .populate({
-        // CHANGED: 'payouts.userId' -> 'memberSummaries.userId' to match your Schema
         path: 'memberSummaries.userId', 
         select: 'firstName lastName photoUrl',
         model: User
       })
       .populate({
-        // Added this to show who distributed the cycle (it is in your schema)
         path: 'distributedBy',
         select: 'firstName lastName photoUrl',
         model: User
       })
-      // REMOVED: 'beneficiaryId' and 'recipientId' because they are NOT in your ChamaCycle.js schema
+      // FIX: Added population for recipientId since it exists in the schema
+      .populate({
+        path: 'recipientId',
+        select: 'firstName lastName photoUrl',
+        model: User
+      })
       .sort({ createdAt: -1 });
 
     return NextResponse.json({ cycles });
