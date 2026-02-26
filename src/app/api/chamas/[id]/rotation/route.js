@@ -168,6 +168,8 @@ export async function POST(request, { params }) {
         // Advance the rotation index to the next member
         const nextIndex = (currentRecipientIndex + 1) % rotationOrder.length;
         chama.rotationPayout.currentRecipientIndex = nextIndex;
+        if (!chama.cycleCount) chama.cycleCount = 1; // Safety check
+        chama.cycleCount += 1;
 
         await chama.save();
 
