@@ -24,6 +24,12 @@ const ChamaCycleSchema = new Schema({
   totalFines: { type: Number, default: 0 },
   netProfit: { type: Number, default: 0 }, // The amount available for dividends
   
+  // --- NEW FIELDS FOR ROTATION ---
+  recipientId: { type: Schema.Types.ObjectId, ref: 'User' }, // Who got the money
+  expectedAmount: { type: Number }, // The target amount
+  actualAmount: { type: Number },   // What was actually paid
+  // -------------------------------
+
   // Member Details (The Dividend Calculation)
   memberSummaries: [MemberSummarySchema],
   

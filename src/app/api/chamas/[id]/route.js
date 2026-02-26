@@ -52,24 +52,28 @@ export async function PUT(request, { params }) {
         if (!user) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
-
-        // Authorization: Ensure the user is the chairperson
-        const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
-      // Inside PUT function
-const isFinancialChange = body.contributionAmount || body.contributionFrequency;
-
-if (isFinancialChange) {
-   if (!['chairperson', 'treasurer'].includes(membership.role)) {
-       return NextResponse.json({ error: "Only Chair/Treasurer can change financial settings" }, { status: 403 });
-   }
-} else {
-   // General updates
-   if (!['chairperson', 'secretary'].includes(membership.role)) {
-       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
-   }
-}
-
+        
         const body = await request.json();
+
+        // Authorization: Ensure the user is a member with appropriate rights
+        const membership = await ChamaMember.findOne({ userId: user.id, chamaId });
+        if (!membership) {
+            return NextResponse.json({ error: "Access Forbidden: You are not a member of this Chama." }, { status: 403 });
+        }
+
+        const isFinancialChange = body.contributionAmount || body.contributionFrequency;
+
+        if (isFinancialChange) {
+           if (!['chairperson', 'treasurer'].includes(membership.role)) {
+               return NextResponse.json({ error: "Only Chair/Treasurer can change financial settings" }, { status: 403 });
+           }
+        } else {
+           // General updates for other fields
+           if (!['chairperson', 'secretary'].includes(membership.role)) {
+               return NextResponse.json({ error: "Insufficient permissions to update chama details" }, { status: 403 });
+           }
+        }
+
         const { name, description, contributionAmount, contributionFrequency, equalSharing, rotationPayout } = body;
 
         const updateData = {

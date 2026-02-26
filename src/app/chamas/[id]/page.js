@@ -21,6 +21,7 @@ import AnnouncementsTab from '@/components/chama/AnnouncementsTab';
 import VotingTab from '@/components/chama/VotingTab';
 import UpdatesTab from '@/components/chama/UpdatesTab';
 import TransactionsTab from '@/components/chama/TransactionsTab';
+import RotationSummary from '@/components/chama/RotationSummary';
 
 
 export default function ChamaDetailPage() {
@@ -32,7 +33,7 @@ export default function ChamaDetailPage() {
   const [activeTab, setActiveTab] = useState('details');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { user: currentUser } = useAuthStore();
-const { id } = useParams();
+  const { id } = useParams();
 
   const fetchData = async () => {
     if (!id) return;
@@ -68,13 +69,13 @@ const { id } = useParams();
     setIsLoading(true);
     fetchData();
   }, [id]);
-  
+
   const handleUpdateChama = (updatedChamaData) => {
     setChama(updatedChamaData);
     fetchData();
   };
 
-  // Loading state with enhanced spinner
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex justify-center items-center">
@@ -89,7 +90,7 @@ const { id } = useParams();
     );
   }
 
-  // Error state with better styling
+  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 flex justify-center items-center px-4">
@@ -101,7 +102,7 @@ const { id } = useParams();
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Something went wrong</h3>
           <p className="text-red-600 mb-4">{error}</p>
-          <button 
+          <button
             onClick={fetchData}
             className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200"
           >
@@ -133,33 +134,73 @@ const { id } = useParams();
     switch (activeTab) {
       case 'members':
         return <MembersList members={members} chama={chama} onActionComplete={fetchData} />;
+
       case 'contributions':
-        return <ContributionsTab chama={chama} members={members} userRole={chama.userRole} currentUserId={currentUser?.id} cycles={cycles} />;
+        return (
+          <ContributionsTab
+            chama={chama}
+            members={members}
+            userRole={chama.userRole}
+            currentUserId={currentUser?.id}
+            cycles={cycles}
+          />
+        );
+
       case 'rotation':
         if (chama.operationType === 'rotation_payout') {
-          return <RotationTab chama={chama} members={members} userRole={chama.userRole} onRotationUpdate={fetchData} cycles={cycles} />;
+          return (
+            <RotationTab
+              chama={chama}
+              members={members}
+              userRole={chama.userRole}
+              onRotationUpdate={fetchData}
+              cycles={cycles}
+            />
+          );
         }
         break;
+
       case 'rules':
         return <RulesTab chama={chama} userRole={chama.userRole} />;
+
       case 'chat':
         return <ChatTab chama={chama} />;
+
       case 'loans':
         return <LoansTab chama={chama} userRole={chama.userRole} currentUserId={currentUser?.id} />;
+
       case 'announcements':
         return <AnnouncementsTab chama={chama} userRole={chama.userRole} />;
+
       case 'voting':
         return <VotingTab chama={chama} userRole={chama.userRole} />;
+
       case 'updates':
         return <UpdatesTab chama={chama} userRole={chama.userRole} />;
+
       case 'finances':
         return <TransactionsTab chama={chama} userRole={chama.userRole} onDataUpdate={fetchData} />;
-      case 'details':
 
+      case 'details':
       default:
-        if (chama.operationType === 'equal_sharing') {
-          return <EqualSharingTab chama={chama} userRole={chama.userRole} onDataUpdate={fetchData} cycles={cycles} />;
+        // Show RotationSummary for rotation_payout chamas
+        if (chama.operationType === 'rotation_payout') {
+          return <RotationSummary chama={chama} currentUser={currentUser} />;
         }
+
+        // Show EqualSharingTab for equal_sharing chamas
+        if (chama.operationType === 'equal_sharing') {
+          return (
+            <EqualSharingTab
+              chama={chama}
+              userRole={chama.userRole}
+              onDataUpdate={fetchData}
+              cycles={cycles}
+            />
+          );
+        }
+
+        // Fallback for any other operation type
         return (
           <div className="bg-white shadow-xl rounded-2xl p-6 lg:p-8 border border-gray-200">
             <div className="flex items-center space-x-3 mb-4">
@@ -178,8 +219,8 @@ const { id } = useParams();
 
   return (
     <ProtectedRoute>
-      <Toaster 
-        position="top-right" 
+      <Toaster
+        position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
@@ -191,24 +232,24 @@ const { id } = useParams();
           },
         }}
       />
-      
+
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
         <div className="max-w-7xl mx-auto py-4 sm:py-6 lg:py-8 px-1 sm:px-6 lg:px-8">
-          {/* Enhanced Header */}
+          {/* Header */}
           <div className="mb-6 lg:mb-8">
             <ChamaDetailHeader chama={chama} onEditClick={() => setIsEditModalOpen(true)} />
           </div>
 
           {/* Main Content Container */}
           <div className="bg-white shadow-xl rounded-2xl border border-gray-200 overflow-hidden">
-            {/* Enhanced Tab Navigation */}
+            {/* Tab Navigation */}
             <div className="border-b border-gray-200 bg-gray-50">
               <nav className="flex overflow-x-auto scrollbar-hide" aria-label="Tabs">
                 <div className="flex min-w-full sm:min-w-0 space-x-1 p sm:px-6">
                   <TabButton isActive={activeTab === 'details'} onClick={() => setActiveTab('details')} color="blue">
-                    {chama.operationType === 'equal_sharing' ? 'Equal_sharing summary' : 'Rotation summary'}
+                    {chama.operationType === 'equal_sharing' ? 'Equal Sharing Summary' : 'Rotation Summary'}
                   </TabButton>
-                  
+
                   <TabButton isActive={activeTab === 'members'} onClick={() => setActiveTab('members')} color="green">
                     <span className="flex items-center space-x-2">
                       <span>Members</span>
@@ -217,18 +258,44 @@ const { id } = useParams();
                       </span>
                     </span>
                   </TabButton>
-                  <TabButton isActive={activeTab === 'contributions'} onClick={() => setActiveTab('contributions')} color="blue">Contributions</TabButton>
+
+                  <TabButton isActive={activeTab === 'contributions'} onClick={() => setActiveTab('contributions')} color="blue">
+                    Contributions
+                  </TabButton>
+
                   {chama.operationType === 'rotation_payout' && (
-                    <TabButton isActive={activeTab === 'rotation'} onClick={() => setActiveTab('rotation')} color="green">Rotation</TabButton>
+                    <TabButton isActive={activeTab === 'rotation'} onClick={() => setActiveTab('rotation')} color="green">
+                      Rotation
+                    </TabButton>
                   )}
-                  <TabButton isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} color="red">Finances</TabButton>
-                 
-                  <TabButton isActive={activeTab === 'loans'} onClick={() => setActiveTab('loans')} color="green">Loans</TabButton>
-                  <TabButton isActive={activeTab === 'voting'} onClick={() => setActiveTab('voting')} color="blue">Voting</TabButton>
-                   <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')} color="red">Rules</TabButton>
-                  <TabButton isActive={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} color="red">Announcements</TabButton>
-                  <TabButton isActive={activeTab === 'updates'} onClick={() => setActiveTab('updates')} color="green">Updates</TabButton>
-                  <TabButton isActive={activeTab === 'chat'} onClick={() => setActiveTab('chat')} color="blue">Chat</TabButton>
+
+                  <TabButton isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} color="red">
+                    Finances
+                  </TabButton>
+
+                  <TabButton isActive={activeTab === 'loans'} onClick={() => setActiveTab('loans')} color="green">
+                    Loans
+                  </TabButton>
+
+                  <TabButton isActive={activeTab === 'voting'} onClick={() => setActiveTab('voting')} color="blue">
+                    Voting
+                  </TabButton>
+
+                  <TabButton isActive={activeTab === 'rules'} onClick={() => setActiveTab('rules')} color="red">
+                    Rules
+                  </TabButton>
+
+                  <TabButton isActive={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} color="red">
+                    Announcements
+                  </TabButton>
+
+                  <TabButton isActive={activeTab === 'updates'} onClick={() => setActiveTab('updates')} color="green">
+                    Updates
+                  </TabButton>
+
+                  <TabButton isActive={activeTab === 'chat'} onClick={() => setActiveTab('chat')} color="blue">
+                    Chat
+                  </TabButton>
                 </div>
               </nav>
             </div>

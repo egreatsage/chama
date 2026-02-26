@@ -1,12 +1,11 @@
 // src/app/api/chamas/[id]/rotation/route.js
 
-// ... (keep all imports and the getCurrentPeriod helper function)
 import { NextResponse } from 'next/server';
 import { connectDB } from "@/lib/dbConnect";
 import { getServerSideUser } from '@/lib/auth';
 import Chama from "@/models/Chama";
 import ChamaMember from "@/models/ChamaMember";
-import Contribution from "@/models/Contribution";
+// Remove Contribution import if not used, or keep it
 import ChamaCycle from "@/models/ChamaCycle";
 import User from "@/models/User";
 import { sendRotationPayoutEmail } from '@/lib/email';
@@ -40,8 +39,7 @@ const getCurrentPeriod = (frequency) => {
     return { start, end };
 };
 
-
-// ... (keep the PUT function as is)
+// PUT: Updates the rotation order (Keep existing logic, it was fine)
 export async function PUT(request, { params }) {
     await connectDB();
     try {
@@ -92,7 +90,6 @@ export async function PUT(request, { params }) {
 }
 
 
-// CORRECTED POST FUNCTION
 // POST: Executes the payout, creates a historical record, and advances the rotation
 export async function POST(request, { params }) {
     await connectDB();
@@ -114,7 +111,10 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Only the chairperson can execute a payout." }, { status: 403 });
         }
         
-        const { start } = getCurrentPeriod(chama.contributionFrequency);
+        // FIX 1: Use the specific rotation frequency, fallback to 'monthly'
+        const frequency = chama.rotationPayout?.payoutFrequency || 'monthly';
+        const { start } = getCurrentPeriod(frequency);
+        
         const { rotationOrder, currentRecipientIndex } = chama.rotationPayout;
         
         if (!rotationOrder || rotationOrder.length === 0) {
@@ -124,30 +124,39 @@ export async function POST(request, { params }) {
         const recipientUserId = rotationOrder[currentRecipientIndex];
         const recipientUser = await User.findById(recipientUserId);
         
-        // **FIX:** Calculate totalPot based on the targetAmount in the chama settings
+        // FIX 2: Ensure we have a valid amount to payout
         const totalPot = chama.rotationPayout.targetAmount || 0;
         if (totalPot <= 0) {
             return NextResponse.json({ error: "Payout amount (targetAmount) is not set for this rotation." }, { status: 400 });
         }
         
-        // **FIX:** Create the historical ChamaCycle record for this payout
+        // FIX 3: Check if there is enough balance (Optional safety check)
+        // If your logic allows paying out even if the specific cash isn't in the wallet yet (e.g. tracking via external M-Pesa), you can skip this.
+        // if (chama.currentBalance < totalPot) {
+        //     return NextResponse.json({ error: `Insufficient balance. Needed: ${totalPot}, Available: ${chama.currentBalance}` }, { status: 400 });
+        // }
+
+        // Create the historical ChamaCycle record
         await ChamaCycle.create({
             chamaId,
             cycleType: 'rotation_cycle',
-            cycleNumber: currentRecipientIndex + 1, // Or a more sophisticated cycle counter
+            cycleNumber: currentRecipientIndex + 1, 
             startDate: start,
             endDate: new Date(),
-            recipientId: recipientUserId,
-            expectedAmount: totalPot,
-            actualAmount: totalPot, // Assuming the full pot is paid out
+            recipientId: recipientUserId, // Now supported by Schema
+            expectedAmount: totalPot,     // Now supported by Schema
+            actualAmount: totalPot,       // Now supported by Schema
             status: 'completed'
         });
 
         // Advance the rotation for the next cycle
         const nextIndex = (currentRecipientIndex + 1) % rotationOrder.length;
         chama.rotationPayout.currentRecipientIndex = nextIndex;
-        // Optionally reset balance if you track contributions this way
-        // chama.currentBalance = 0; 
+
+        // FIX 4: Reset the balance after payout!
+        // This prevents the balance from growing infinitely.
+        chama.currentBalance = Math.max(0, chama.currentBalance - totalPot);
+
         await chama.save();
         
         // Send notification email to the recipient

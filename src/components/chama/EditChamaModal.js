@@ -165,14 +165,12 @@ export default function EditChamaModal({ chama, isOpen, onClose, onUpdate }) {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Contribution Frequency *
-                  </label>
-                  <select 
-                    name="contributionFrequency" 
-                    value={formData.contributionFrequency || 'monthly'} 
-                    onChange={handleChange} 
-                    className="w-full border-2 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 p-3 rounded-lg transition-all duration-200 text-gray-800 bg-white"
+                  <label className="block text-sm font-medium text-gray-700">Frequency</label>
+                  <select
+                    name="contributionFrequency"
+                    value={formData.contributionFrequency || 'monthly'}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   >
                     <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>

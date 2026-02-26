@@ -81,21 +81,25 @@ const Step2_Configuration = ({ formData, handleChange, handleConfigChange }) => 
       <div className="space-y-6">
        
         <div>
-          <label htmlFor="contributionFrequency" className="block text-sm font-semibold text-gray-700 mb-2">
-            Contribution Frequency
+          <label htmlFor="contributionFrequency" className="block text-sm font-medium text-gray-700">
+            Contribution/Rotation Frequency <span className="text-red-500">*</span>
           </label>
-          <select 
-            name="contributionFrequency" 
-            id="contributionFrequency" 
-            value={formData.contributionFrequency} 
-            onChange={handleChange} 
-            className="w-full px-4 py-3 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
+          <select
+            id="contributionFrequency"
+            name="contributionFrequency"
+            value={formData.contributionFrequency}
+            onChange={handleChange}
+            required
+            className="w-full px-4 py-3 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base" 
           >
-            <option value="daily">Daily</option>
+            <option value="" disabled>Please select a frequency</option>
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
             <option value="quarterly">Quarterly</option>
           </select>
+          <p className="mt-1 text-xs text-gray-500">
+            Determines when contributions are due or when the rotation advances.
+          </p>
         </div>
         <div>
             <label htmlFor="savingStartDate" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -181,6 +185,7 @@ const Step2_Configuration = ({ formData, handleChange, handleConfigChange }) => 
               />
             </div>
           </div>
+          
         );
       default:
         return null;
@@ -242,7 +247,7 @@ export default function CreateChamaForm() {
     name: '',
     description: '',
     operationType: 'equal_sharing',
-    contributionFrequency: 'monthly',
+    contributionFrequency: '',
     typeSpecificConfig: {
         savingStartDate: new Date().toISOString().split('T')[0] // Default to today
     },
